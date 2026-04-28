@@ -27,7 +27,6 @@ target/
 .idea/
 *.swp
 *.swo
-*.tmp
 
 # System/Environment
 .DS_Store
@@ -38,6 +37,7 @@ Thumbs.db
 
 # Logs and coverage
 *.log
+*.tmp
 coverage/
 htmlcov/
 .coverage

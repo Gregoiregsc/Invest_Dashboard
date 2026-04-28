@@ -491,16 +491,12 @@
             color: var(--muted);
             transition: all 0.2s;
             opacity: 0.5;
+            font-size: 16px;
         }
 
         .balance-toggle-btn:hover {
             color: var(--primary);
             opacity: 1;
-        }
-
-        .balance-toggle-btn svg {
-            width: 12px;
-            height: 12px;
         }
 
         .balance-header-row {
@@ -537,12 +533,12 @@
         .balance-t-shape {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            border-top: 2px solid var(--text);
             position: relative;
             margin-top: 8px;
             background: #fafbfc;
             border-radius: 6px;
             overflow: hidden;
+            border-top: none;
         }
 
         .balance-t-shape::before {
@@ -553,6 +549,16 @@
             transform: translateX(-50%);
             height: 100%;
             width: 1px;
+            background: var(--text);
+        }
+        
+        .balance-t-shape::after {
+            content: "";
+            position: absolute;
+            top: 24px;
+            left: 0;
+            right: 0;
+            height: 2px;
             background: var(--text);
         }
 
@@ -569,7 +575,6 @@
             color: var(--text);
             padding-bottom: 4px;
             text-align: center;
-            border-bottom: 2px solid var(--text);
             margin-bottom: 6px;
         }
 
@@ -1086,12 +1091,7 @@
                     <div class="balance-header-row">
                         <div class="balance-title-wrapper">
                             <span class="balance-title">Balance Générale</span>
-                            <button class="balance-toggle-btn" id="balance-toggle-btn" title="Fermer">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                                </svg>
-                            </button>
+                            <button class="balance-toggle-btn" id="balance-toggle-btn" title="Fermer">🧮</button>
                         </div>
                     </div>
                     <div class="balance-content" id="balance-content">
