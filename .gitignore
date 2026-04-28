@@ -1,1 +1,4 @@
-Nothing needs to be added to the .gitignore file since only a single HTML file (`dashboard_v.0.0.2.html`) was modified, which is a source code file that should be tracked in version control. No build artifacts, dependencies, or temporary files were detected in the changes.
+```
+# Version-specific dashboard files
+dashboard_v.*.html
+```

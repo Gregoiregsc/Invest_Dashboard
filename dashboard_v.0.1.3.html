@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Comptable v.0.0.2</title>
+    <title>Dashboard Comptable v.0.1.3</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1690,6 +1690,17 @@
             pageContainers.forEach(container => {
                 container.classList.toggle('active', container.id === `page-${pageName}`);
             });
+            
+            // Réinitialiser le formulaire trade quand on quitte la page
+            if (pageName !== 'new-trade' && tradeDom) {
+                tradeDom.operationSelect.value = '';
+                tradeDom.helper.style.display = 'block';
+                tradeDom.dateInput.disabled = true;
+                tradeDom.standardBlock.classList.add('hidden');
+                tradeDom.transferBlock.classList.add('hidden');
+                tradeDom.rowsContainer.innerHTML = '<p class="helper">Aucune ligne à saisir pour l\'instant.</p>';
+                tradeDom.submit.disabled = true;
+            }
         }
 
         function renderSelectOptionLists() {
@@ -1737,6 +1748,19 @@
                 fillSelect(tradeDom.standardAssetSelect, assetOptions, '-- Actif --');
                 fillSelect(tradeDom.startAssetSelect, assetOptions, '-- Actif source --');
                 fillSelect(tradeDom.endAssetSelect, assetOptions, '-- Actif dest. --');
+                
+                // Attacher l'événement change APRÈS le remplissage du select
+                tradeDom.operationSelect.addEventListener('change', handleTradeOperationChange);
+                
+                // Initialisation : désactiver tous les champs sauf la sélection d'opération
+                tradeDom.dateInput.disabled = true;
+                tradeDom.standardPortfolioSelect.disabled = true;
+                tradeDom.standardAssetSelect.disabled = true;
+                tradeDom.startPortfolioSelect.disabled = true;
+                tradeDom.endPortfolioSelect.disabled = true;
+                tradeDom.startAssetSelect.disabled = true;
+                tradeDom.endAssetSelect.disabled = true;
+                tradeDom.submit.disabled = true;
             }
 
             // Movement form - vérification que movementDom est initialisé et que les éléments existent
@@ -2689,8 +2713,97 @@
             balanceToggleBtn.textContent = '✕';
         });
 
+        // =========================================================
+        // Trade form - Fonction de gestion du changement d'opération
+        // =========================================================
+        function handleTradeOperationChange() {
+            console.log('handleTradeOperationChange appelé');
+            const selectedOperationId = tradeDom.operationSelect.value;
+            console.log('Opération sélectionnée:', selectedOperationId);
+
+            // Réinitialiser l'état du formulaire
+            tradeDom.standardBlock.classList.add('hidden');
+            tradeDom.transferBlock.classList.add('hidden');
+            tradeDom.rowsContainer.innerHTML = '';
+            tradeDom.helper.style.display = 'none';
+
+            // Débloquer la date
+            tradeDom.dateInput.disabled = false;
+
+            if (!selectedOperationId) {
+                // Aucune opération sélectionnée
+                tradeDom.helper.style.display = 'block';
+                tradeDom.dateInput.disabled = true;
+                return;
+            }
+
+            // Trouver l'opération sélectionnée
+            const operation = operations.find(op => op.id === selectedOperationId);
+            console.log('Opération trouvée:', operation);
+            if (!operation) return;
+
+            // Vérifier si c'est un transfert ou une opération standard
+            const isTransfer = operation.name && operation.name.toLowerCase().includes('transfert');
+            console.log('Est un transfert:', isTransfer);
+
+            if (isTransfer) {
+                // Afficher le bloc transfert
+                tradeDom.transferBlock.classList.remove('hidden');
+                console.log('Bloc transfert affiché');
+
+                // Débloquer les selects du bloc transfert
+                tradeDom.startPortfolioSelect.disabled = false;
+                tradeDom.endPortfolioSelect.disabled = false;
+                tradeDom.startAssetSelect.disabled = false;
+                tradeDom.endAssetSelect.disabled = false;
+
+                // Masquer les éléments du bloc standard
+                tradeDom.standardPortfolioSelect.disabled = true;
+                tradeDom.standardAssetSelect.disabled = true;
+            } else {
+                // Afficher le bloc standard
+                tradeDom.standardBlock.classList.remove('hidden');
+                console.log('Bloc standard affiché');
+
+                // Débloquer les selects du bloc standard
+                tradeDom.standardPortfolioSelect.disabled = false;
+                tradeDom.standardAssetSelect.disabled = false;
+
+                // Masquer les éléments du bloc transfert
+                tradeDom.startPortfolioSelect.disabled = true;
+                tradeDom.endPortfolioSelect.disabled = true;
+                tradeDom.startAssetSelect.disabled = true;
+                tradeDom.endAssetSelect.disabled = true;
+            }
+
+            // Générer les lignes d'écritures comptables (exemple simple)
+            tradeDom.rowsContainer.innerHTML = `
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Lignes d'écritures à saisir</label>
+                        <p class="helper">Sélectionnez les portefeuilles et actifs pour générer les écritures.</p>
+                    </div>
+                </div>
+            `;
+
+            // Débloquer le bouton de soumission
+            tradeDom.submit.disabled = false;
+        }
+
+        // Initialisation : désactiver tous les champs sauf la sélection d'opération
+        if (tradeDom) {
+            tradeDom.dateInput.disabled = true;
+            tradeDom.standardPortfolioSelect.disabled = true;
+            tradeDom.standardAssetSelect.disabled = true;
+            tradeDom.startPortfolioSelect.disabled = true;
+            tradeDom.endPortfolioSelect.disabled = true;
+            tradeDom.startAssetSelect.disabled = true;
+            tradeDom.endAssetSelect.disabled = true;
+            tradeDom.submit.disabled = true;
+        }
+
         // Initialize
-        console.log('Dashboard Comptable v.0.0.2 prêt');
+        console.log('Dashboard Comptable v.0.0.3 prêt');
     </script>
 </body>
 </html>
