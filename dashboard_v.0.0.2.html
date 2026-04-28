@@ -1589,9 +1589,9 @@
 
             // Asset form - vérification des éléments avant remplissage
             fillSelect(document.getElementById('asset-category-select'), categoryOptions, '-- Catégorie --');
-            fillSelect(document.getElementById('asset-country-select'), countryOptions, '-- Pays --');
-            fillSelect(document.getElementById('asset-currency-select'), currencyOptions, '-- Devise --');
-            fillSelect(document.getElementById('asset-marketplace-select'), marketplaceOptions, '-- Place --');
+            fillSelect(document.getElementById('asset-country-select'), countryOptions, '-- Pays --', false);
+            fillSelect(document.getElementById('asset-currency-select'), currencyOptions, '-- Devise --', false);
+            fillSelect(document.getElementById('asset-marketplace-select'), marketplaceOptions, '-- Place --', false);
             fillSelect(document.getElementById('marketplace-country'), countryOptions, '-- Pays --');
 
             // Journal form - uniquement si les éléments existent (page active)
@@ -1599,10 +1599,9 @@
             if (journalNatureEl) {
                 fillStaticSelect(journalNatureEl, natureOptions, '-- Nature --');
             }
-            // Note: 'ledger-type' n'existe pas dans le formulaire principal, seulement dans le modal
 
-            // Trade form - vérification que tradeDom est initialisé
-            if (tradeDom) {
+            // Trade form - vérification que tradeDom est initialisé et que les éléments existent
+            if (tradeDom && tradeDom.operationSelect) {
                 fillSelect(tradeDom.operationSelect, operationOptions, '-- Opération --');
                 fillSelect(tradeDom.standardPortfolioSelect, portfolioOptions, '-- Portefeuille --');
                 fillSelect(tradeDom.startPortfolioSelect, portfolioOptions, '-- Source --');
@@ -1612,15 +1611,15 @@
                 fillSelect(tradeDom.endAssetSelect, assetOptions, '-- Actif dest. --');
             }
 
-            // Movement form - vérification que movementDom est initialisé
-            if (movementDom) {
+            // Movement form - vérification que movementDom est initialisé et que les éléments existent
+            if (movementDom && movementDom.entrySelect) {
                 fillSelect(movementDom.entrySelect, entryOptions, '-- Écriture --');
                 fillSelect(movementDom.ledgerSelect, ledgerOptions, '-- Compte --');
                 fillSelect(movementDom.portfolioSelect, portfolioOptions, '-- Portefeuille --');
                 fillSelect(movementDom.assetSelect, assetOptions, '-- Actif --');
             }
 
-            // Ledger filters
+            // Ledger filters - vérification que les éléments existent
             fillSelect(document.getElementById('ledger-portfolio-filter'), portfolioOptions, '-- Tous --');
             fillSelect(document.getElementById('ledger-asset-filter'), assetOptions, '-- Tous --');
         }
