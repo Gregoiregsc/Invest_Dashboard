@@ -447,6 +447,38 @@
             z-index: 100;
         }
 
+        .grand-journal-panel.hidden {
+            display: none;
+        }
+
+        .balance-open-icon {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            border-radius: 50%;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            z-index: 100;
+            transition: all 0.2s;
+        }
+
+        .balance-open-icon:hover {
+            background: var(--primary-dark);
+            transform: scale(1.05);
+        }
+
+        .balance-open-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
         .balance-toggle-btn {
             display: inline-flex;
             align-items: center;
@@ -1054,9 +1086,10 @@
                     <div class="balance-header-row">
                         <div class="balance-title-wrapper">
                             <span class="balance-title">Balance Générale</span>
-                            <button class="balance-toggle-btn" id="balance-toggle-btn" title="Afficher/Masquer">
+                            <button class="balance-toggle-btn" id="balance-toggle-btn" title="Fermer">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
                                 </svg>
                             </button>
                         </div>
@@ -1085,6 +1118,16 @@
                             <span id="gj-balance">0,00</span>
                         </div>
                     </div>
+                </div>
+
+                <!-- Balance Open Icon -->
+                <div class="balance-open-icon" id="balance-open-icon" title="Ouvrir la Balance Générale">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="12" y1="18" x2="12" y2="12"></line>
+                        <line x1="9" y1="15" x2="15" y2="15"></line>
+                    </svg>
                 </div>
             </div>
 
@@ -2676,15 +2719,18 @@
         // Balance toggle button
         const balanceToggleBtn = document.getElementById('balance-toggle-btn');
         const balanceContent = document.getElementById('balance-content');
+        const grandJournalPanel = document.getElementById('grand-journal-panel');
+        const balanceOpenIcon = document.getElementById('balance-open-icon');
         
         balanceToggleBtn.addEventListener('click', () => {
-            if (balanceContent.classList.contains('hidden')) {
-                balanceContent.classList.remove('hidden');
-                balanceToggleBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
-            } else {
-                balanceContent.classList.add('hidden');
-                balanceToggleBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
-            }
+            grandJournalPanel.classList.add('hidden');
+            balanceOpenIcon.style.display = 'flex';
+        });
+
+        // Balance open icon
+        balanceOpenIcon.addEventListener('click', () => {
+            grandJournalPanel.classList.remove('hidden');
+            balanceOpenIcon.style.display = 'none';
         });
 
         // Initialize
