@@ -448,22 +448,25 @@
         }
 
         .balance-toggle-btn {
-            display: inline-block;
-            font-size: 9px;
-            color: var(--muted);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             background: transparent;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            padding: 2px 6px;
+            border: none;
             cursor: pointer;
             margin-left: 8px;
+            padding: 2px;
+            color: var(--muted);
             transition: all 0.2s;
         }
 
         .balance-toggle-btn:hover {
-            background: rgba(20, 89, 199, 0.05);
             color: var(--primary);
-            border-color: var(--primary);
+        }
+
+        .balance-toggle-btn svg {
+            width: 14px;
+            height: 14px;
         }
 
         .balance-header-row {
@@ -1049,7 +1052,11 @@
                     <div class="balance-header-row">
                         <div class="balance-title-wrapper">
                             <span class="balance-title">Balance Générale</span>
-                            <button class="balance-toggle-btn" id="balance-toggle-btn">Réduire</button>
+                            <button class="balance-toggle-btn" id="balance-toggle-btn" title="Afficher/Masquer">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>
                         </div>
                     </div>
                     <div class="balance-content" id="balance-content">
@@ -2671,10 +2678,10 @@
         balanceToggleBtn.addEventListener('click', () => {
             if (balanceContent.classList.contains('hidden')) {
                 balanceContent.classList.remove('hidden');
-                balanceToggleBtn.textContent = 'Réduire';
+                balanceToggleBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
             } else {
                 balanceContent.classList.add('hidden');
-                balanceToggleBtn.textContent = 'Développer';
+                balanceToggleBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
             }
         });
 
