@@ -1,0 +1,2780 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Comptable v.0.0.2</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #f3f6fb;
+            --panel: #ffffff;
+            --panel-alt: #f8fbff;
+            --border: #dbe4f0;
+            --text: #1f2937;
+            --muted: #667085;
+            --primary: #1459c7;
+            --primary-dark: #0d4293;
+            --success-bg: #e8f7ee;
+            --success-text: #166534;
+            --error-bg: #fdecec;
+            --error-text: #b42318;
+            --shadow: 0 20px 46px rgba(16, 24, 40, 0.08);
+            --topbar-height: 70px;
+            --sidebar-width: 260px;
+        }
+
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle at top left, rgba(20, 89, 199, 0.10), transparent 28%),
+                        linear-gradient(180deg, #f7f9fe 0%, #eef3fb 100%);
+            color: var(--text);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Top Bar */
+        .topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--topbar-height);
+            background: linear-gradient(135deg, #1a3a6e 0%, #0d2847 100%);
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+            z-index: 200;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .topbar-brand {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar-brand h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .topbar-brand span {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .session-info {
+            font-size: 13px;
+            opacity: 0.8;
+            max-width: 200px;
+            text-align: right;
+        }
+
+        .profile-container {
+            position: relative;
+        }
+
+        .profile-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .profile-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: #fff;
+        }
+
+        .profile-dropdown {
+            display: none;
+            position: absolute;
+            top: 52px;
+            right: 0;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            min-width: 220px;
+            z-index: 300;
+            overflow: hidden;
+        }
+
+        .profile-dropdown.active {
+            display: block;
+        }
+
+        .profile-dropdown-header {
+            padding: 16px;
+            background: var(--panel-alt);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .profile-dropdown-header h3 {
+            font-size: 14px;
+            margin-bottom: 4px;
+            color: var(--text);
+        }
+
+        .profile-dropdown-header p {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .profile-dropdown-menu {
+            padding: 8px 0;
+        }
+
+        .profile-dropdown-item {
+            display: block;
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            background: none;
+            text-align: left;
+            font-size: 14px;
+            color: var(--text);
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .profile-dropdown-item:hover {
+            background: var(--panel-alt);
+        }
+
+        .profile-dropdown-item.danger {
+            color: var(--error-text);
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            position: fixed;
+            top: var(--topbar-height);
+            left: 0;
+            right: 0;
+            height: 56px;
+            background: var(--panel);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            z-index: 150;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 8px;
+            list-style: none;
+        }
+
+        .nav-item {
+            padding: 10px 18px;
+            border-radius: 10px;
+            background: transparent;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item:hover {
+            background: var(--panel-alt);
+            color: var(--text);
+        }
+
+        .nav-item.active {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        /* Main Content Area */
+        .main-area {
+            position: fixed;
+            top: calc(var(--topbar-height) + 56px);
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+        }
+
+        /* Page Container */
+        .page-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: auto;
+            display: none;
+        }
+
+        .page-container.active {
+            display: block;
+        }
+
+        .page-content {
+            padding: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Ledger Layout */
+        .ledger-layout {
+            display: flex;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .ledger-sidebar {
+            width: 280px;
+            background: var(--panel);
+            border-right: 1px solid var(--border);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+
+        .ledger-sidebar.collapsed {
+            transform: translateX(-280px);
+            position: absolute;
+        }
+
+        .sidebar-toggle {
+            position: absolute;
+            top: 12px;
+            right: -36px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--primary-dark);
+        }
+
+        .ledger-sidebar h3 {
+            font-size: 14px;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        .sidebar-btn {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--panel-alt);
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+
+        .sidebar-btn:hover {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        .ledger-canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #fafcff;
+        }
+
+        .ledger-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5000px;
+            height: 5000px;
+            transform-origin: 0 0;
+            cursor: grab;
+        }
+
+        .ledger-canvas:active {
+            cursor: grabbing;
+        }
+
+        /* Draggable T-Account */
+        .t-account-card {
+            position: absolute;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 18px;
+            min-width: 320px;
+            user-select: none;
+        }
+
+        .t-account-card .drag-handle {
+            cursor: move;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 12px;
+        }
+
+        .t-account-card h4 {
+            font-size: 14px;
+            color: var(--primary);
+            margin: 0;
+        }
+
+        .t-account-collapse {
+            margin-top: 8px;
+        }
+
+        .t-account-collapse-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .t-account-collapse-content {
+            display: block;
+        }
+
+        .t-account-collapse-content.hidden {
+            display: none;
+        }
+
+        .t-shape {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border-top: 2px solid var(--text);
+            position: relative;
+            min-height: 140px;
+            margin-top: 8px;
+        }
+
+        .t-shape::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 2px;
+            background: var(--text);
+            transform: translateX(-50%);
+        }
+
+        .t-side {
+            padding: 10px 12px 0 12px;
+        }
+
+        .t-side-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .movement-line {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 12px;
+            padding: 4px 0;
+            border-bottom: 1px dashed #e6edf7;
+        }
+
+        .movement-total {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Grand Journal Panel */
+        .grand-journal-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 320px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            z-index: 100;
+        }
+
+        .grand-journal-panel.hidden {
+            display: none;
+        }
+
+        .balance-open-icon {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 32px;
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.2s;
+            opacity: 0.5;
+        }
+
+        .balance-open-icon:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .balance-toggle-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            margin-left: 6px;
+            padding: 0;
+            color: #000;
+            transition: all 0.2s;
+            opacity: 0.5;
+            font-size: 16px;
+        }
+
+        .balance-toggle-btn:hover {
+            opacity: 1;
+        }
+
+        .balance-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px 4px 12px;
+        }
+
+        .balance-title-wrapper {
+            display: flex;
+            align-items: center;
+        }
+
+        .balance-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .balance-content {
+            display: block;
+        }
+
+        .balance-content.hidden {
+            display: none;
+        }
+
+        .balance-t-container {
+            margin-top: 0;
+            padding: 0 12px 12px 12px;
+        }
+
+        .balance-t-shape {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            position: relative;
+            margin-top: 8px;
+            background: #fafbfc;
+            border-radius: 6px;
+            overflow: hidden;
+            border-top: none;
+        }
+
+        .balance-t-shape::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 100%;
+            width: 1px;
+            background: var(--text);
+        }
+        
+        .balance-t-shape::after {
+            content: "";
+            position: absolute;
+            top: 24px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--text);
+        }
+
+        .balance-t-side {
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .balance-t-side-title {
+            font-weight: 700;
+            font-size: 11px;
+            color: var(--text);
+            padding-bottom: 4px;
+            text-align: center;
+            margin-bottom: 6px;
+        }
+
+        #balance-debit-ledgers,
+        #balance-credit-ledgers {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 180px;
+            min-height: 40px;
+        }
+
+        .balance-ledger-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 3px 6px;
+            font-size: 10px;
+            border-bottom: 1px solid #f0f0f0;
+            gap: 6px;
+        }
+
+        .balance-ledger-row:last-child {
+            border-bottom: none;
+        }
+
+        .balance-ledger-name {
+            color: var(--muted);
+            flex: 1;
+            white-space: normal;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-right: 4px;
+            word-break: break-word;
+            line-height: 1.2;
+        }
+
+        .balance-ledger-amount {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 10px;
+            white-space: nowrap;
+            margin-left: 4px;
+            text-align: right;
+        }
+
+        .balance-total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 10px;
+            margin-top: 6px;
+            background: linear-gradient(135deg, rgba(20, 89, 199, 0.08) 0%, rgba(20, 89, 199, 0.02) 100%);
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 11px;
+            border-top: 1px solid var(--primary);
+        }
+
+        .balance-balance-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 10px;
+            margin-top: 4px;
+            background: transparent;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 9px;
+            color: var(--muted);
+        }
+
+        .balance-balance-row.unbalanced {
+            background: rgba(180, 35, 24, 0.08);
+            color: var(--error-text);
+        }
+
+        /* Style pour les totaux dans le tableau */
+        .balance-total-in-table {
+            display: flex;
+            justify-content: center;
+            padding: 6px 4px;
+            font-size: 10px;
+            font-weight: 700;
+            border-top: 1px solid var(--text);
+            margin-top: auto;
+            background: #fff;
+        }
+        
+        .balance-total-in-table span {
+            text-align: center;
+            flex: 1;
+        }
+
+        /* Cards and Forms */
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            box-shadow: var(--shadow);
+            padding: 26px;
+            margin-bottom: 24px;
+        }
+
+        .section-box {
+            background: var(--panel-alt);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 18px;
+        }
+
+        h2 {
+            font-size: 22px;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        h3 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: var(--primary);
+        }
+
+        .subtitle {
+            color: var(--muted);
+            margin-bottom: 22px;
+            font-size: 14px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .form-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .form-grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .span-2 {
+            grid-column: span 2;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 11px 13px;
+            font-size: 14px;
+            background: #fff;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: rgba(20, 89, 199, 0.55);
+            box-shadow: 0 0 0 4px rgba(20, 89, 199, 0.10);
+        }
+
+        textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 12px;
+            padding: 12px 18px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: #eef2f7;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .select-with-add {
+            display: grid;
+            grid-template-columns: 1fr 42px;
+            gap: 8px;
+            align-items: end;
+        }
+
+        .icon-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: #fff;
+            color: var(--primary);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .message {
+            display: none;
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 18px;
+            border: 1px solid transparent;
+            font-size: 14px;
+        }
+
+        .message.error {
+            background: var(--error-bg);
+            color: var(--error-text);
+            border-color: #f6c4c4;
+        }
+
+        .message.success {
+            background: var(--success-bg);
+            color: var(--success-text);
+            border-color: #b7e4c7;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Modal */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.46);
+            padding: 24px;
+            z-index: 1000;
+            overflow: auto;
+        }
+
+        .modal-backdrop.active {
+            display: block;
+        }
+
+        .modal-card {
+            max-width: 760px;
+            margin: 30px auto;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            box-shadow: var(--shadow);
+            padding: 24px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .close-btn {
+            border: 1px solid var(--border);
+            background: #fff;
+            border-radius: 12px;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        /* Login Page */
+        .login-page {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .login-card {
+            max-width: 440px;
+            width: 100%;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .form-grid, .form-grid-3, .form-grid-4 {
+                grid-template-columns: 1fr;
+            }
+            .span-2 {
+                grid-column: span 1;
+            }
+            .topbar {
+                padding: 0 16px;
+            }
+            .navbar {
+                padding: 0 16px;
+                overflow-x: auto;
+            }
+            .nav-menu {
+                flex-wrap: nowrap;
+            }
+            .session-info {
+                display: none;
+            }
+            .grand-journal-panel {
+                width: calc(100% - 48px);
+                right: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Page -->
+    <section id="login-page" class="login-page">
+        <div class="card login-card">
+            <h1>Connexion</h1>
+            <p class="subtitle">Connecte-toi avec ton compte Supabase pour accéder au dashboard.</p>
+            <div id="login-error" class="message error"></div>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" autocomplete="username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="login-password">Mot de passe</label>
+                    <input type="password" id="login-password" autocomplete="current-password" required>
+                </div>
+
+                <div class="btn-row">
+                    <button id="btn-login" class="btn btn-primary" type="submit">Se connecter</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- App Layout -->
+    <div id="app-layout" class="hidden">
+        <!-- Top Bar -->
+        <header class="topbar">
+            <div class="topbar-brand">
+                <h1>Dashboard Comptable</h1>
+                <span>Gestion financière v.0.0.2</span>
+            </div>
+            <div class="topbar-right">
+                <div class="session-info" id="session-info"></div>
+                <div class="profile-container">
+                    <button class="profile-btn" id="profile-btn" title="Profil">👤</button>
+                    <div class="profile-dropdown" id="profile-dropdown">
+                        <div class="profile-dropdown-header">
+                            <h3 id="profile-name">Nom Prénom</h3>
+                            <p id="profile-email">email@example.com</p>
+                        </div>
+                        <div class="profile-dropdown-menu">
+                            <button class="profile-dropdown-item" id="btn-profile-info">ℹ️ Infos profil</button>
+                            <button class="profile-dropdown-item danger" id="btn-logout">🚪 Déconnexion</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Bar -->
+        <nav class="navbar">
+            <ul class="nav-menu">
+                <li><button class="nav-item active" data-page="new-trade">📝 Nouvelle Transaction</button></li>
+                <li><button class="nav-item" data-page="ledger">📒 Grand Livre</button></li>
+                <li><button class="nav-item" data-page="other-forms">📋 Autres Formulaires</button></li>
+                <li><button class="nav-item" data-page="manual-entry">⌨️ Saisie Manuelle</button></li>
+            </ul>
+        </nav>
+
+        <!-- Main Area -->
+        <main class="main-area">
+            <!-- Page: New Trade -->
+            <div id="page-new-trade" class="page-container active">
+                <div class="page-content">
+                    <div class="card">
+                        <h2>Nouvelle Transaction</h2>
+                        <p class="subtitle">Enregistrez une nouvelle opération financière</p>
+                        
+                        <div id="trade-error" class="message error"></div>
+                        <div id="trade-success" class="message success"></div>
+
+                        <form id="trade-form">
+                            <div class="section-box">
+                                <h3>1. Sélection de l'opération</h3>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="trade-operation-select">Type d'opération</label>
+                                        <select id="trade-operation-select" required></select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="trade-date">Date</label>
+                                        <input type="date" id="trade-date" required>
+                                    </div>
+                                </div>
+                                <p id="trade-operation-helper" class="helper">Choisissez une opération pour générer la structure du formulaire.</p>
+                            </div>
+
+                            <div id="trade-standard-block" class="section-box hidden">
+                                <h3>2. Référentiel standard</h3>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="trade-standard-portfolio-select">Portefeuille</label>
+                                        <select id="trade-standard-portfolio-select"></select>
+                                    </div>
+                                    <div id="trade-standard-asset-group" class="form-group">
+                                        <label for="trade-standard-asset-select">Actif</label>
+                                        <select id="trade-standard-asset-select"></select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="trade-transfer-block" class="section-box hidden">
+                                <h3>2. Référentiel transfert</h3>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="trade-start-portfolio-select">Portefeuille source</label>
+                                        <select id="trade-start-portfolio-select"></select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="trade-end-portfolio-select">Portefeuille destination</label>
+                                        <select id="trade-end-portfolio-select"></select>
+                                    </div>
+                                </div>
+
+                                <div class="form-grid">
+                                    <div id="trade-start-asset-group" class="form-group">
+                                        <label for="trade-start-asset-select">Actif source</label>
+                                        <select id="trade-start-asset-select"></select>
+                                    </div>
+                                    <div id="trade-end-asset-group" class="form-group">
+                                        <label for="trade-end-asset-select">Actif destination</label>
+                                        <select id="trade-end-asset-select"></select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="section-box">
+                                <h3>3. Détail par écriture comptable</h3>
+                                <div id="trade-rows-container">
+                                    <p class="helper">Aucune ligne à saisir pour l'instant.</p>
+                                </div>
+                            </div>
+
+                            <div class="btn-row">
+                                <button id="btn-trade-submit" class="btn btn-primary" type="submit">Créer la transaction</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page: Ledger -->
+            <div id="page-ledger" class="page-container">
+                <div class="ledger-layout">
+                    <!-- Sidebar -->
+                    <aside class="ledger-sidebar" id="ledger-sidebar">
+                        <button class="sidebar-toggle" id="ledger-sidebar-toggle">◀</button>
+                        <h3>Actions</h3>
+                        <button class="sidebar-btn" id="btn-add-ledger-modal">+ Ajouter un compte</button>
+                        <h3>Filtres</h3>
+                        <div class="form-group">
+                            <label for="ledger-portfolio-filter">Portefeuille</label>
+                            <select id="ledger-portfolio-filter"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="ledger-asset-filter">Actif</label>
+                            <select id="ledger-asset-filter"></select>
+                        </div>
+                    </aside>
+
+                    <!-- Canvas -->
+                    <div class="ledger-canvas-container" id="ledger-canvas-container">
+                        <div class="ledger-canvas" id="ledger-canvas">
+                            <!-- T-Accounts will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grand Journal Panel -->
+                <div class="grand-journal-panel" id="grand-journal-panel">
+                    <div class="balance-header-row">
+                        <div class="balance-title-wrapper">
+                            <span class="balance-title">Balance Générale</span>
+                            <button class="balance-toggle-btn" id="balance-toggle-btn" title="Fermer">✕</button>
+                        </div>
+                    </div>
+                    <div class="balance-content" id="balance-content">
+                        <div class="balance-t-container">
+                            <div class="balance-t-shape">
+                                <div class="balance-t-side">
+                                    <div class="balance-t-side-title">Débit</div>
+                                    <div id="balance-debit-ledgers"></div>
+                                    <div class="balance-total-in-table">
+                                        <span id="gj-total-debit">0,00</span>
+                                    </div>
+                                </div>
+                                <div class="balance-t-side">
+                                    <div class="balance-t-side-title">Crédit</div>
+                                    <div id="balance-credit-ledgers"></div>
+                                    <div class="balance-total-in-table">
+                                        <span id="gj-total-credit">0,00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="balance-balance-row" id="balance-balance-row">
+                            <span>Écart</span>
+                            <span id="gj-balance">0,00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Balance Open Icon -->
+                <div class="balance-open-icon" id="balance-open-icon" title="Ouvrir la Balance Générale">🧮</div>
+            </div>
+
+            <!-- Page: Other Forms -->
+            <div id="page-other-forms" class="page-container">
+                <div class="page-content">
+                    <div class="card">
+                        <h2>Autres Formulaires</h2>
+                        <p class="subtitle">Gérez les référentiels auxiliaires</p>
+
+                        <div class="form-grid-4">
+                            <div class="section-box">
+                                <h3>Pays</h3>
+                                <div id="country-error" class="message error"></div>
+                                <div id="country-success" class="message success"></div>
+                                <form id="country-form">
+                                    <div class="form-group">
+                                        <label for="country-name">Nom</label>
+                                        <input type="text" id="country-name" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="country-symbol">Symbole</label>
+                                        <input type="text" id="country-symbol">
+                                    </div>
+                                    <button class="btn btn-primary" type="submit">Créer</button>
+                                </form>
+                            </div>
+
+                            <div class="section-box">
+                                <h3>Place de marché</h3>
+                                <div id="marketplace-error" class="message error"></div>
+                                <div id="marketplace-success" class="message success"></div>
+                                <form id="marketplace-form">
+                                    <div class="form-group">
+                                        <label for="marketplace-name">Nom</label>
+                                        <input type="text" id="marketplace-name" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="marketplace-country">Pays</label>
+                                        <select id="marketplace-country"></select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="marketplace-mic_code">Code MIC</label>
+                                        <input type="text" id="marketplace-mic_code">
+                                    </div>
+                                    <button class="btn btn-primary" type="submit">Créer</button>
+                                </form>
+                            </div>
+
+                            <div class="section-box">
+                                <h3>Devise</h3>
+                                <div id="currency-error" class="message error"></div>
+                                <div id="currency-success" class="message success"></div>
+                                <form id="currency-form">
+                                    <div class="form-group">
+                                        <label for="currency-name">Nom</label>
+                                        <input type="text" id="currency-name" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="currency-symbol">Symbole</label>
+                                        <input type="text" id="currency-symbol">
+                                    </div>
+                                    <button class="btn btn-primary" type="submit">Créer</button>
+                                </form>
+                            </div>
+
+                            <div class="section-box">
+                                <h3>Catégorie</h3>
+                                <div id="category-error" class="message error"></div>
+                                <div id="category-success" class="message success"></div>
+                                <form id="category-form">
+                                    <div class="form-group">
+                                        <label for="category-name">Nom</label>
+                                        <input type="text" id="category-name" required>
+                                    </div>
+                                    <button class="btn btn-primary" type="submit">Créer</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="form-grid-4" style="margin-top: 24px;">
+                            <div class="section-box">
+                                <h3>Actif</h3>
+                                <div id="asset-error" class="message error"></div>
+                                <div id="asset-success" class="message success"></div>
+                                <form id="asset-form">
+                                    <div class="form-group">
+                                        <label for="asset-name">Nom</label>
+                                        <input type="text" id="asset-name" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="asset-isin">Code ISIN</label>
+                                        <input type="text" id="asset-isin" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="asset-ticker">Ticker</label>
+                                        <input type="text" id="asset-ticker" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Catégorie</label>
+                                        <div class="select-with-add">
+                                            <select id="asset-category-select"></select>
+                                            <button class="icon-btn" type="button" data-modal="category">+</button>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-primary" type="submit">Créer</button>
+                                </form>
+                            </div>
+
+                            <div class="section-box">
+                                <h3>Portefeuille</h3>
+                                <div id="portfolio-error" class="message error"></div>
+                                <div id="portfolio-success" class="message success"></div>
+                                <form id="portfolio-form">
+                                    <div class="form-group">
+                                        <label for="portfolio-name">Nom</label>
+                                        <input type="text" id="portfolio-name" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="portfolio-bank">Banque</label>
+                                        <input type="text" id="portfolio-bank" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="portfolio-account-number">N° compte</label>
+                                        <input type="text" id="portfolio-account-number" required>
+                                    </div>
+                                    <button class="btn btn-primary" type="submit">Créer</button>
+                                </form>
+                            </div>
+
+                            <div class="section-box">
+                                <h3>Opération</h3>
+                                <div id="operation-error" class="message error"></div>
+                                <div id="operation-success" class="message success"></div>
+                                <form id="operation-form">
+                                    <div class="form-group">
+                                        <label for="operation-name">Nom</label>
+                                        <input type="text" id="operation-name" required>
+                                    </div>
+                                    <button class="btn btn-primary" type="submit">Créer</button>
+                                </form>
+                            </div>
+
+                            <div class="section-box">
+                                <h3>Écriture comptable</h3>
+                                <div id="journal-error" class="message error"></div>
+                                <div id="journal-success" class="message success"></div>
+                                <form id="journal-form">
+                                    <div class="form-group">
+                                        <label for="journal-name">Nom</label>
+                                        <input type="text" id="journal-name" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="journal-nature">Nature</label>
+                                        <select id="journal-nature" required></select>
+                                    </div>
+                                    <button class="btn btn-primary" type="submit">Créer</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page: Manual Entry -->
+            <div id="page-manual-entry" class="page-container">
+                <div class="page-content">
+                    <div class="card">
+                        <h2>Saisie Manuelle d'Écriture</h2>
+                        <p class="subtitle">Ajoutez manuellement un mouvement comptable</p>
+
+                        <div id="movement-error" class="message error"></div>
+                        <div id="movement-success" class="message success"></div>
+
+                        <form id="movement-form">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="movement-entry-select">Écriture</label>
+                                    <select id="movement-entry-select" required></select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="movement-ledger-select">Compte</label>
+                                    <select id="movement-ledger-select" required></select>
+                                </div>
+                            </div>
+
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="movement-portfolio-select">Portefeuille</label>
+                                    <select id="movement-portfolio-select"></select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="movement-asset-select">Actif</label>
+                                    <select id="movement-asset-select"></select>
+                                </div>
+                            </div>
+
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="movement-side-select">Sens comptable</label>
+                                    <select id="movement-side-select" required>
+                                        <option value="">-- Sélectionner --</option>
+                                        <option value="debit">Débit</option>
+                                        <option value="credit">Crédit</option>
+                                    </select>
+                                </div>
+                                <div class="form-group"></div>
+                            </div>
+
+                            <div class="form-grid">
+                                <div id="movement-amount-group" class="form-group">
+                                    <label for="movement-amount">Montant</label>
+                                    <input type="number" step="any" id="movement-amount">
+                                </div>
+                                <div id="movement-quantity-group" class="form-group">
+                                    <label for="movement-quantity">Quantité</label>
+                                    <input type="number" step="any" id="movement-quantity">
+                                </div>
+                            </div>
+
+                            <div class="helper" id="movement-entry-helper">Choisissez une écriture pour adapter montant/quantité selon `is_cash`.</div>
+
+                            <div class="btn-row">
+                                <button class="btn btn-primary" type="submit">Créer le mouvement</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Backdrop -->
+    <div id="modal-backdrop" class="modal-backdrop">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div>
+                    <h2 id="modal-title">Ajout rapide</h2>
+                    <p id="modal-subtitle" class="helper">Le formulaire s'ouvre sans réinitialiser la page en cours.</p>
+                </div>
+                <button id="modal-close" class="close-btn" type="button">Fermer</button>
+            </div>
+            <div id="modal-error" class="message error"></div>
+            <div id="modal-success" class="message success"></div>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Templates for Modals -->
+    <template id="modal-template-category">
+        <form data-modal-form="category">
+            <div class="form-group">
+                <label for="modal-category-name">Nom</label>
+                <input type="text" id="modal-category-name" required>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Créer la catégorie</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="modal-template-country">
+        <form data-modal-form="country">
+            <div class="form-group">
+                <label for="modal-country-name">Nom</label>
+                <input type="text" id="modal-country-name" required>
+            </div>
+            <div class="form-group">
+                <label for="modal-country-symbol">Symbole</label>
+                <input type="text" id="modal-country-symbol">
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Créer le pays</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="modal-template-marketplace">
+        <form data-modal-form="marketplace">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="modal-marketplace-name">Nom</label>
+                    <input type="text" id="modal-marketplace-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="modal-marketplace-country">Pays</label>
+                    <select id="modal-marketplace-country"></select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="modal-marketplace-mic_code">MIC Code</label>
+                <input type="text" id="modal-marketplace-mic_code">
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Créer la place de marché</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="modal-template-currency">
+        <form data-modal-form="currency">
+            <div class="form-group">
+                <label for="modal-currency-name">Nom</label>
+                <input type="text" id="modal-currency-name" required>
+            </div>
+            <div class="form-group">
+                <label for="modal-currency-symbol">Symbole</label>
+                <input type="text" id="modal-currency-symbol">
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Créer la devise</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="modal-template-ledger">
+        <form data-modal-form="ledger">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="modal-ledger-name">Nom du compte</label>
+                    <input type="text" id="modal-ledger-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="modal-ledger-type">Type de compte</label>
+                    <select id="modal-ledger-type" required></select>
+                </div>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Créer le compte</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="modal-template-journal-entry">
+        <form data-modal-form="journal-entry">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="modal-journal-name">Nom</label>
+                    <input type="text" id="modal-journal-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="modal-journal-nature">Nature</label>
+                    <select id="modal-journal-nature" required></select>
+                </div>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Créer l'écriture</button>
+            </div>
+        </form>
+    </template>
+
+    <script>
+        // =========================================================
+        // 0. Vérification de l'environnement
+        // =========================================================
+
+        // =========================================================
+        // 1. Configuration Supabase
+        // =========================================================
+        const SUPABASE_URL = 'https://jyuonaxizhzzlmkwapyn.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dW9uYXhpemh6emxta3dhcHluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NjU1MjcsImV4cCI6MjA5MDU0MTUyN30.xZJWfsMz8ro6xv0uGe8OcZZUItuWyCz7uft6kZBXVJ8';
+        
+        let supabaseClient;
+        try {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            console.log('✅ Client Supabase initialisé avec succès');
+        } catch (error) {
+            console.error('❌ Échec de l\'initialisation de Supabase:', error);
+            alert('Erreur: Impossible de se connecter à Supabase. Vérifiez votre connexion internet.');
+        }
+
+        // =========================================================
+        // 2. Etat global
+        // =========================================================
+        let currentUser = null;
+        let operations = [];
+        let portfolios = [];
+        let assets = [];
+        let categories = [];
+        let countries = [];
+        let currencies = [];
+        let marketplaces = [];
+        let ledgers = [];
+        let journalEntries = [];
+        let entries = [];
+        let movements = [];
+        let currentModalType = null;
+
+        const natureOptions = [
+            { label: 'TRADE', value: 'TRADE' },
+            { label: 'CAPITALE', value: 'CAPITAL' },
+            { label: 'DEPENSE', value: 'EXPENSE' },
+            { label: 'REVENU', value: 'INCOME' },
+            { label: 'TRANSFERE', value: 'TRANSFER' }
+        ];
+
+        const ledgerTypeOptions = [
+            { label: 'CAPITAL', value: 'EQUITY' },
+            { label: 'LIQUIDITE', value: 'CASH' },
+            { label: 'DEPENSE', value: 'EXPENSE' },
+            { label: 'ACTIF', value: 'ASSET' },
+            { label: 'REVENU', value: 'INCOME' },
+            { label: 'TAXE', value: 'TAX' }
+        ];
+
+        // =========================================================
+        // 3. Références DOM
+        // =========================================================
+        const loginPage = document.getElementById('login-page');
+        const appLayout = document.getElementById('app-layout');
+        const loginForm = document.getElementById('login-form');
+        const btnLogin = document.getElementById('btn-login');
+        const btnLogout = document.getElementById('btn-logout');
+        const btnProfileInfo = document.getElementById('btn-profile-info');
+        const profileBtn = document.getElementById('profile-btn');
+        const profileDropdown = document.getElementById('profile-dropdown');
+        const profileName = document.getElementById('profile-name');
+        const profileEmail = document.getElementById('profile-email');
+        const sessionInfo = document.getElementById('session-info');
+        const navItems = document.querySelectorAll('.nav-item');
+        const pageContainers = document.querySelectorAll('.page-container');
+        const modalBackdrop = document.getElementById('modal-backdrop');
+        const modalClose = document.getElementById('modal-close');
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
+        const modalError = document.getElementById('modal-error');
+        const modalSuccess = document.getElementById('modal-success');
+
+        // Ledger specific
+        const ledgerSidebar = document.getElementById('ledger-sidebar');
+        const ledgerSidebarToggle = document.getElementById('ledger-sidebar-toggle');
+        const ledgerCanvasContainer = document.getElementById('ledger-canvas-container');
+        const ledgerCanvas = document.getElementById('ledger-canvas');
+
+        // Trade form
+        const tradeDom = {
+            error: document.getElementById('trade-error'),
+            success: document.getElementById('trade-success'),
+            operationSelect: document.getElementById('trade-operation-select'),
+            dateInput: document.getElementById('trade-date'),
+            helper: document.getElementById('trade-operation-helper'),
+            rowsContainer: document.getElementById('trade-rows-container'),
+            standardBlock: document.getElementById('trade-standard-block'),
+            transferBlock: document.getElementById('trade-transfer-block'),
+            standardPortfolioSelect: document.getElementById('trade-standard-portfolio-select'),
+            standardAssetSelect: document.getElementById('trade-standard-asset-select'),
+            standardAssetGroup: document.getElementById('trade-standard-asset-group'),
+            startPortfolioSelect: document.getElementById('trade-start-portfolio-select'),
+            endPortfolioSelect: document.getElementById('trade-end-portfolio-select'),
+            startAssetSelect: document.getElementById('trade-start-asset-select'),
+            endAssetSelect: document.getElementById('trade-end-asset-select'),
+            startAssetGroup: document.getElementById('trade-start-asset-group'),
+            endAssetGroup: document.getElementById('trade-end-asset-group'),
+            submit: document.getElementById('btn-trade-submit')
+        };
+
+        // Movement form
+        const movementDom = {
+            error: document.getElementById('movement-error'),
+            success: document.getElementById('movement-success'),
+            entrySelect: document.getElementById('movement-entry-select'),
+            ledgerSelect: document.getElementById('movement-ledger-select'),
+            portfolioSelect: document.getElementById('movement-portfolio-select'),
+            assetSelect: document.getElementById('movement-asset-select'),
+            sideSelect: document.getElementById('movement-side-select'),
+            amountInput: document.getElementById('movement-amount'),
+            quantityInput: document.getElementById('movement-quantity'),
+            amountGroup: document.getElementById('movement-amount-group'),
+            quantityGroup: document.getElementById('movement-quantity-group'),
+            helper: document.getElementById('movement-entry-helper')
+        };
+
+        // =========================================================
+        // 4. Utilitaires génériques
+        // =========================================================
+        function showMessage(element, message) {
+            element.textContent = message;
+            element.style.display = 'block';
+        }
+
+        function hideMessage(element) {
+            element.textContent = '';
+            element.style.display = 'none';
+        }
+
+        function clearMessages(...elements) {
+            elements.forEach(hideMessage);
+        }
+
+        function showFormFeedback(scope, type, message) {
+            const map = {
+                asset: ['asset-error', 'asset-success'],
+                operation: ['operation-error', 'operation-success'],
+                journal: ['journal-error', 'journal-success'],
+                portfolio: ['portfolio-error', 'portfolio-success'],
+                country: ['country-error', 'country-success'],
+                marketplace: ['marketplace-error', 'marketplace-success'],
+                currency: ['currency-error', 'currency-success'],
+                category: ['category-error', 'category-success'],
+                movement: ['movement-error', 'movement-success']
+            };
+
+            const ids = map[scope];
+            if (!ids) return;
+            clearMessages(document.getElementById(ids[0]), document.getElementById(ids[1]));
+            showMessage(document.getElementById(type === 'error' ? ids[0] : ids[1]), message);
+        }
+
+        function getErrorMessage(error) {
+            if (!error) return 'Erreur inconnue.';
+            const parts = [error.message, error.details, error.hint].filter(Boolean);
+            return parts.length > 0 ? parts.join(' | ') : 'Erreur inconnue.';
+        }
+
+        function setButtonState(button, disabled, label) {
+            button.disabled = disabled;
+            button.textContent = label;
+        }
+
+        function fillSelect(select, items, placeholder, allowEmpty = true) {
+            if (!select) {
+                // Élément non présent dans le DOM actuel (onglet non actif par exemple), on ignore silencieusement
+                return;
+            }
+            select.innerHTML = '';
+
+            if (allowEmpty) {
+                const empty = document.createElement('option');
+                empty.value = '';
+                empty.textContent = placeholder;
+                select.appendChild(empty);
+            }
+
+            if (!items || !Array.isArray(items)) {
+                return;
+            }
+
+            items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item.label;
+                select.appendChild(option);
+            });
+        }
+
+        function fillStaticSelect(select, options, placeholder, allowEmpty = true) {
+            if (!select) {
+                // Élément non présent dans le DOM actuel, on ignore silencieusement
+                return;
+            }
+            select.innerHTML = '';
+
+            if (allowEmpty) {
+                const empty = document.createElement('option');
+                empty.value = '';
+                empty.textContent = placeholder;
+                select.appendChild(empty);
+            }
+
+            options.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.value;
+                option.textContent = item.label;
+                select.appendChild(option);
+            });
+        }
+
+        function formatAmount(value) {
+            return Number(value || 0).toLocaleString('fr-FR', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function showPage(pageName) {
+            navItems.forEach(item => {
+                item.classList.toggle('active', item.dataset.page === pageName);
+            });
+            pageContainers.forEach(container => {
+                container.classList.toggle('active', container.id === `page-${pageName}`);
+            });
+        }
+
+        function renderSelectOptionLists() {
+            const categoryOptions = categories.map(item => ({ id: item.id, label: item.name }));
+            const countryOptions = countries.map(item => ({ id: item.id, label: item.name || `Pays #${item.id}` }));
+            const currencyOptions = currencies.map(item => ({ id: item.id, label: item.name || `Devise #${item.id}` }));
+            const marketplaceOptions = marketplaces.map(item => {
+                const countryName = item.country_id
+                    ? (countries.find(c => c.id === item.country_id)?.name || `#${item.country_id}`)
+                    : '';
+                return {
+                    id: item.id,
+                    label: `${item.name || `Place #${item.id}`}${countryName ? ` | ${countryName}` : ''}`
+                };
+            });
+            const portfolioOptions = portfolios.map(item => ({ id: item.id, label: item.portfolio_name }));
+            const assetOptions = assets.map(item => ({ id: item.id, label: item.name }));
+            const ledgerOptions = ledgers.map(item => ({ id: item.id, label: item.name || `Compte #${item.id}` }));
+            const journalOptions = journalEntries.map(item => ({ id: item.id, label: item.name }));
+            const entryOptions = entries.map(item => ({
+                id: item.id,
+                label: `#${item.id} | ${item.date || 'Sans date'} | ${item.journal_entry_name || 'Sans journal'}`
+            }));
+            const operationOptions = operations.map(item => ({ id: item.id, label: item.name || `Opération #${item.id}` }));
+
+            // Asset form - vérification des éléments avant remplissage
+            fillSelect(document.getElementById('asset-category-select'), categoryOptions, '-- Catégorie --');
+            fillSelect(document.getElementById('asset-country-select'), countryOptions, '-- Pays --', false);
+            fillSelect(document.getElementById('asset-currency-select'), currencyOptions, '-- Devise --', false);
+            fillSelect(document.getElementById('asset-marketplace-select'), marketplaceOptions, '-- Place --', false);
+            fillSelect(document.getElementById('marketplace-country'), countryOptions, '-- Pays --');
+
+            // Journal form - uniquement si les éléments existent (page active)
+            const journalNatureEl = document.getElementById('journal-nature');
+            if (journalNatureEl) {
+                fillStaticSelect(journalNatureEl, natureOptions, '-- Nature --');
+            }
+
+            // Trade form - vérification que tradeDom est initialisé et que les éléments existent
+            if (tradeDom && tradeDom.operationSelect) {
+                fillSelect(tradeDom.operationSelect, operationOptions, '-- Opération --');
+                fillSelect(tradeDom.standardPortfolioSelect, portfolioOptions, '-- Portefeuille --');
+                fillSelect(tradeDom.startPortfolioSelect, portfolioOptions, '-- Source --');
+                fillSelect(tradeDom.endPortfolioSelect, portfolioOptions, '-- Destination --');
+                fillSelect(tradeDom.standardAssetSelect, assetOptions, '-- Actif --');
+                fillSelect(tradeDom.startAssetSelect, assetOptions, '-- Actif source --');
+                fillSelect(tradeDom.endAssetSelect, assetOptions, '-- Actif dest. --');
+            }
+
+            // Movement form - vérification que movementDom est initialisé et que les éléments existent
+            if (movementDom && movementDom.entrySelect) {
+                fillSelect(movementDom.entrySelect, entryOptions, '-- Écriture --');
+                fillSelect(movementDom.ledgerSelect, ledgerOptions, '-- Compte --');
+                fillSelect(movementDom.portfolioSelect, portfolioOptions, '-- Portefeuille --');
+                fillSelect(movementDom.assetSelect, assetOptions, '-- Actif --');
+            }
+
+            // Ledger filters - vérification que les éléments existent
+            fillSelect(document.getElementById('ledger-portfolio-filter'), portfolioOptions, '-- Tous --');
+            fillSelect(document.getElementById('ledger-asset-filter'), assetOptions, '-- Tous --');
+        }
+
+        // =========================================================
+        // 5. Profil utilisateur
+        // =========================================================
+        async function ensureAppUserProfile() {
+            const payload = {
+                id: currentUser.id,
+                firstname: currentUser.user_metadata?.firstname || currentUser.user_metadata?.first_name || null,
+                name: currentUser.user_metadata?.name || currentUser.user_metadata?.last_name || currentUser.email || null
+            };
+
+            const { error } = await supabaseClient
+                .from('user')
+                .upsert(payload, { onConflict: 'id' });
+
+            if (error) throw error;
+        }
+
+        function updateProfileUI() {
+            const email = currentUser?.email || '';
+            const firstname = currentUser?.user_metadata?.firstname || currentUser?.user_metadata?.first_name || '';
+            const name = currentUser?.user_metadata?.name || currentUser?.user_metadata?.last_name || email.split('@')[0];
+            
+            sessionInfo.textContent = email;
+            profileName.textContent = `${firstname} ${name}`.trim();
+            profileEmail.textContent = email;
+        }
+
+        // =========================================================
+        // 6. Chargement des référentiels
+        // =========================================================
+        async function loadOperations() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des operations ignoré');
+                operations = [];
+                return;
+            }
+            const { data, error } = await supabaseClient
+                .from('operation')
+                .select('id, name')
+                .order('name');
+            if (error) {
+                console.warn('Erreur lors du chargement des operations:', error.message);
+                operations = [];
+                return;
+            }
+            operations = data || [];
+        }
+
+        async function loadPortfolios() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des portfolios ignoré');
+                portfolios = [];
+                return;
+            }
+            const { data, error } = await supabaseClient
+                .from('portfolio')
+                .select('id, portfolio_name')
+                .order('portfolio_name');
+            if (error) {
+                console.warn('Erreur lors du chargement des portfolios:', error.message);
+                portfolios = [];
+                return;
+            }
+            portfolios = data || [];
+        }
+
+        async function loadAssets() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des assets ignoré');
+                assets = [];
+                return;
+            }
+            const { data, error } = await supabaseClient
+                .from('asset')
+                .select('id, name')
+                .order('name');
+            if (error) {
+                console.warn('Erreur lors du chargement des assets:', error.message);
+                assets = [];
+                return;
+            }
+            assets = data || [];
+        }
+
+        async function loadCategories() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des categories ignoré');
+                categories = [];
+                return;
+            }
+            const { data, error } = await supabaseClient
+                .from('category')
+                .select('id, name')
+                .order('name');
+            if (error) {
+                console.warn('Erreur lors du chargement des categories:', error.message);
+                categories = [];
+                return;
+            }
+            categories = data || [];
+        }
+
+        async function loadCountries() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des countries ignoré');
+                countries = [];
+                return;
+            }
+            const { data, error } = await supabaseClient
+                .from('country')
+                .select('id, name, symbol')
+                .order('name');
+            if (error) {
+                console.warn('Erreur lors du chargement des countries:', error.message);
+                countries = [];
+                return;
+            }
+            countries = data || [];
+        }
+
+        async function loadCurrencies() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des currencies ignoré');
+                currencies = [];
+                return;
+            }
+            const { data, error } = await supabaseClient
+                .from('currency')
+                .select('id, name, symbol')
+                .order('name');
+            if (error) {
+                console.warn('Erreur lors du chargement des currencies:', error.message);
+                currencies = [];
+                return;
+            }
+            currencies = data || [];
+        }
+
+        async function loadMarketplaces() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des marketplaces ignoré');
+                marketplaces = [];
+                return;
+            }
+            const { data, error } = await supabaseClient
+                .from('marketplace')
+                .select('id, name, country_id')
+                .order('name');
+            if (error) {
+                console.warn('Erreur lors du chargement des marketplaces:', error.message);
+                marketplaces = [];
+                return;
+            }
+            marketplaces = data || [];
+        }
+
+        async function loadLedgers() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des ledgers ignoré');
+                ledgers = [];
+                return;
+            }
+            // Charger ledger_type
+            const { data, error } = await supabaseClient
+                .from('ledger')
+                .select('id, name, ledger_type')
+                .order('name');
+            if (error) {
+                console.warn('Erreur lors du chargement des ledgers:', error.message);
+                showNotification(`Ledger: ${error.message}`, 'warning');
+                ledgers = [];
+                return;
+            }
+            ledgers = data || [];
+        }
+
+        async function loadJournalEntries() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des journal entries ignoré');
+                journalEntries = [];
+                return;
+            }
+            const { data, error } = await supabaseClient
+                .from('journal_entry')
+                .select('id, name')
+                .order('name');
+            if (error) {
+                console.warn('Erreur lors du chargement des journal entries:', error.message);
+                journalEntries = [];
+                return;
+            }
+            journalEntries = data || [];
+        }
+
+        async function loadEntries() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des entries ignoré');
+                entries = [];
+                return;
+            }
+            const { data, error } = await supabaseClient
+                .from('entry')
+                .select('id, date, journal_entry_id')
+                .order('date');
+            if (error) {
+                console.warn('Erreur lors du chargement des entries:', error.message);
+                entries = [];
+                return;
+            }
+            entries = data || [];
+        }
+
+        async function loadMovements() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des movements ignoré');
+                movements = [];
+                return;
+            }
+            // Charger accounting_side
+            const { data, error } = await supabaseClient
+                .from('movement')
+                .select('id, entry_id, ledger_id, portfolio_id, asset_id, accounting_side, amount, quantity');
+            if (error) {
+                console.warn('Erreur lors du chargement des movements:', error.message);
+                showNotification(`Movement: ${error.message}`, 'warning');
+                movements = [];
+                return;
+            }
+            movements = data || [];
+        }
+
+        async function refreshAllData() {
+            try {
+                if (!supabaseClient) {
+                    console.warn('Supabase client non disponible, affichage en mode dégradé');
+                    renderSelectOptionLists();
+                    renderTAccounts();
+                    updateGrandJournal();
+                    return;
+                }
+                
+                await Promise.all([
+                    loadOperations(),
+                    loadPortfolios(),
+                    loadAssets(),
+                    loadCategories(),
+                    loadCountries(),
+                    loadCurrencies(),
+                    loadMarketplaces(),
+                    loadLedgers(),
+                    loadJournalEntries(),
+                    loadEntries(),
+                    loadMovements()
+                ]);
+                renderSelectOptionLists();
+                renderTAccounts();
+                updateGrandJournal();
+            } catch (error) {
+                console.error('Erreur lors du chargement:', error);
+                // Mode dégradé: continuer avec les données partielles
+                renderSelectOptionLists();
+                renderTAccounts();
+                updateGrandJournal();
+            }
+        }
+
+        // =========================================================
+        // 7. Gestion du Ledger Canvas (pan & zoom)
+        // =========================================================
+        let canvasOffsetX = 0;
+        let canvasOffsetY = 0;
+        let canvasScale = 1;
+        let isDragging = false;
+        let startX, startY;
+
+        function initLedgerCanvas() {
+            ledgerCanvas.addEventListener('mousedown', handleCanvasMouseDown);
+            document.addEventListener('mousemove', handleCanvasMouseMove);
+            document.addEventListener('mouseup', handleCanvasMouseUp);
+            ledgerCanvasContainer.addEventListener('wheel', handleCanvasWheel);
+        }
+
+        function handleCanvasMouseDown(e) {
+            if (e.target.closest('.t-account-card')) return;
+            isDragging = true;
+            startX = e.clientX - canvasOffsetX;
+            startY = e.clientY - canvasOffsetY;
+            ledgerCanvas.style.cursor = 'grabbing';
+        }
+
+        function handleCanvasMouseMove(e) {
+            if (!isDragging) return;
+            canvasOffsetX = e.clientX - startX;
+            canvasOffsetY = e.clientY - startY;
+            updateCanvasTransform();
+        }
+
+        function handleCanvasMouseUp() {
+            isDragging = false;
+            ledgerCanvas.style.cursor = 'grab';
+        }
+
+        function handleCanvasWheel(e) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            canvasScale = Math.max(0.5, Math.min(2, canvasScale + delta));
+            updateCanvasTransform();
+        }
+
+        function updateCanvasTransform() {
+            ledgerCanvas.style.transform = `translate(${canvasOffsetX}px, ${canvasOffsetY}px) scale(${canvasScale})`;
+        }
+
+        // =========================================================
+        // 8. Rendu des comptes en T
+        // =========================================================
+        function renderTAccounts() {
+            ledgerCanvas.innerHTML = '';
+            
+            const portfolioFilter = document.getElementById('ledger-portfolio-filter').value;
+            const assetFilter = document.getElementById('ledger-asset-filter').value;
+
+            // Group movements by ledger
+            const ledgerMap = new Map();
+            
+            movements.forEach(movement => {
+                if (portfolioFilter && movement.portfolio_id !== portfolioFilter) return;
+                if (assetFilter && movement.asset_id !== assetFilter) return;
+
+                if (!ledgerMap.has(movement.ledger_id)) {
+                    const ledger = ledgers.find(l => l.id === movement.ledger_id);
+                    ledgerMap.set(movement.ledger_id, {
+                        ledger: ledger,
+                        debits: [],
+                        credits: []
+                    });
+                }
+
+                const entry = entries.find(e => e.id === movement.entry_id);
+                const lineData = {
+                    amount: movement.amount || 0,
+                    quantity: movement.quantity || 0,
+                    date: entry?.date || '',
+                    portfolio: portfolios.find(p => p.id === movement.portfolio_id)?.portfolio_name || '',
+                    asset: assets.find(a => a.id === movement.asset_id)?.name || ''
+                };
+
+                if (movement.accounting_side === 'debit' || movement.accounting_side === 'DEBIT') {
+                    ledgerMap.get(movement.ledger_id).debits.push(lineData);
+                } else {
+                    ledgerMap.get(movement.ledger_id).credits.push(lineData);
+                }
+            });
+
+            // Render T-accounts
+            let posX = 50;
+            let posY = 50;
+            const rowHeight = 280;
+            const colWidth = 380;
+            let colIndex = 0;
+            let rowIndex = 0;
+
+            ledgerMap.forEach((data, ledgerId) => {
+                const card = document.createElement('div');
+                card.className = 't-account-card';
+                card.style.left = `${posX}px`;
+                card.style.top = `${posY}px`;
+                card.dataset.ledgerId = ledgerId;
+
+                const totalDebit = data.debits.reduce((sum, d) => sum + parseFloat(d.amount), 0);
+                const totalCredit = data.credits.reduce((sum, c) => sum + parseFloat(c.amount), 0);
+
+                card.innerHTML = `
+                    <div class="drag-handle">
+                        <h4>${data.ledger?.name || `Compte #${ledgerId}`}</h4>
+                    </div>
+                    <div class="t-account-collapse">
+                        <div class="t-account-collapse-header" onclick="toggleCollapse(this)">
+                            <span>Détails par portefeuille</span>
+                            <span>▼</span>
+                        </div>
+                        <div class="t-account-collapse-content">
+                            <div class="t-shape">
+                                <div class="t-side">
+                                    <div class="t-side-title">Débit</div>
+                                    ${renderSideLines(data.debits)}
+                                    <div class="movement-total">
+                                        <span>Total</span>
+                                        <span>${formatAmount(totalDebit)}</span>
+                                    </div>
+                                </div>
+                                <div class="t-side">
+                                    <div class="t-side-title">Crédit</div>
+                                    ${renderSideLines(data.credits)}
+                                    <div class="movement-total">
+                                        <span>Total</span>
+                                        <span>${formatAmount(totalCredit)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                makeDraggable(card);
+                ledgerCanvas.appendChild(card);
+
+                colIndex++;
+                if (colIndex >= 3) {
+                    colIndex = 0;
+                    rowIndex++;
+                    posX = 50;
+                    posY = 50 + rowIndex * rowHeight;
+                } else {
+                    posX += colWidth;
+                }
+            });
+        }
+
+        function renderSideLines(lines) {
+            if (lines.length === 0) return '<div class="helper">Aucun mouvement</div>';
+            
+            // Group by portfolio and asset
+            const grouped = new Map();
+            lines.forEach(line => {
+                const key = `${line.portfolio}|${line.asset}`;
+                if (!grouped.has(key)) {
+                    grouped.set(key, { portfolio: line.portfolio, asset: line.asset, amount: 0, quantity: 0 });
+                }
+                const g = grouped.get(key);
+                g.amount += parseFloat(line.amount);
+                g.quantity += parseFloat(line.quantity);
+            });
+
+            let html = '';
+            grouped.forEach((g, key) => {
+                html += `
+                    <div class="movement-line">
+                        <span>${g.portfolio} ${g.asset ? `- ${g.asset}` : ''}</span>
+                        <span>${formatAmount(g.amount)}</span>
+                    </div>
+                `;
+            });
+            return html;
+        }
+
+        function toggleCollapse(header) {
+            const content = header.nextElementSibling;
+            content.classList.toggle('hidden');
+            header.querySelector('span:last-child').textContent = content.classList.contains('hidden') ? '▶' : '▼';
+        }
+
+        function makeDraggable(element) {
+            let isDown = false;
+            let offset = [0, 0];
+
+            const handle = element.querySelector('.drag-handle');
+            handle.addEventListener('mousedown', (e) => {
+                isDown = true;
+                offset = [
+                    element.offsetLeft - e.clientX,
+                    element.offsetTop - e.clientY
+                ];
+            });
+
+            document.addEventListener('mouseup', () => {
+                isDown = false;
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDown) return;
+                e.preventDefault();
+                const x = e.clientX + offset[0];
+                const y = e.clientY + offset[1];
+                element.style.left = `${x}px`;
+                element.style.top = `${y}px`;
+            });
+        }
+
+        // =========================================================
+        // 9. Grand Journal
+        // =========================================================
+        function updateGrandJournal() {
+            let totalDebit = 0;
+            let totalCredit = 0;
+            
+            // Group by ledger
+            const ledgerBalances = new Map();
+
+            movements.forEach(m => {
+                const amount = parseFloat(m.amount || 0);
+                const isDebit = m.accounting_side === 'debit' || m.accounting_side === 'DEBIT';
+                
+                if (isDebit) {
+                    totalDebit += amount;
+                } else {
+                    totalCredit += amount;
+                }
+                
+                // Group by ledger
+                if (!ledgerBalances.has(m.ledger_id)) {
+                    const ledger = ledgers.find(l => l.id === m.ledger_id);
+                    ledgerBalances.set(m.ledger_id, {
+                        name: ledger?.name || `Compte #${m.ledger_id}`,
+                        debit: 0,
+                        credit: 0
+                    });
+                }
+                
+                if (isDebit) {
+                    ledgerBalances.get(m.ledger_id).debit += amount;
+                } else {
+                    ledgerBalances.get(m.ledger_id).credit += amount;
+                }
+            });
+
+            // Render T-account with all ledgers
+            const debitContainer = document.getElementById('balance-debit-ledgers');
+            const creditContainer = document.getElementById('balance-credit-ledgers');
+            
+            debitContainer.innerHTML = '';
+            creditContainer.innerHTML = '';
+            
+            ledgerBalances.forEach((data, ledgerId) => {
+                if (data.debit > 0) {
+                    const row = document.createElement('div');
+                    row.className = 'balance-ledger-row';
+                    row.innerHTML = `
+                        <span class="balance-ledger-name">${data.name}</span>
+                        <span class="balance-ledger-amount">${formatAmount(data.debit)}</span>
+                    `;
+                    debitContainer.appendChild(row);
+                }
+                
+                if (data.credit > 0) {
+                    const row = document.createElement('div');
+                    row.className = 'balance-ledger-row';
+                    row.innerHTML = `
+                        <span class="balance-ledger-name">${data.name}</span>
+                        <span class="balance-ledger-amount">${formatAmount(data.credit)}</span>
+                    `;
+                    creditContainer.appendChild(row);
+                }
+            });
+
+            document.getElementById('gj-total-debit').textContent = formatAmount(totalDebit);
+            document.getElementById('gj-total-credit').textContent = formatAmount(totalCredit);
+            const balance = totalDebit - totalCredit;
+            const balanceEl = document.getElementById('gj-balance');
+            const balanceRow = document.getElementById('balance-balance-row');
+            
+            balanceEl.textContent = formatAmount(Math.abs(balance));
+            
+            if (balance === 0) {
+                balanceEl.style.color = 'var(--success-text)';
+                balanceRow.classList.remove('unbalanced');
+            } else {
+                balanceEl.style.color = 'var(--error-text)';
+                balanceRow.classList.add('unbalanced');
+            }
+        }
+
+        // =========================================================
+        // 10. Event Listeners
+        // =========================================================
+        
+        // Login
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const loginError = document.getElementById('login-error');
+
+            setButtonState(btnLogin, true, 'Connexion...');
+            hideMessage(loginError);
+
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+            if (error) {
+                showMessage(loginError, getErrorMessage(error));
+                setButtonState(btnLogin, false, 'Se connecter');
+                return;
+            }
+
+            currentUser = data.user;
+            await ensureAppUserProfile();
+            await refreshAllData();
+            updateProfileUI();
+            
+            loginPage.style.display = 'none';
+            appLayout.classList.remove('hidden');
+            initLedgerCanvas();
+        });
+
+        // Profile dropdown
+        profileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            profileDropdown.classList.toggle('active');
+        });
+
+        document.addEventListener('click', () => {
+            profileDropdown.classList.remove('active');
+        });
+
+        btnProfileInfo.addEventListener('click', () => {
+            alert(`Profil:\n\nNom: ${profileName.textContent}\nEmail: ${profileEmail.textContent}`);
+            profileDropdown.classList.remove('active');
+        });
+
+        btnLogout.addEventListener('click', async () => {
+            await supabaseClient.auth.signOut();
+            currentUser = null;
+            appLayout.classList.add('hidden');
+            loginPage.style.display = 'flex';
+            profileDropdown.classList.remove('active');
+        });
+
+        // Navigation
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                showPage(item.dataset.page);
+            });
+        });
+
+        // Ledger sidebar toggle
+        ledgerSidebarToggle.addEventListener('click', () => {
+            ledgerSidebar.classList.toggle('collapsed');
+            ledgerSidebarToggle.textContent = ledgerSidebar.classList.contains('collapsed') ? '▶' : '◀';
+        });
+
+        // Modal handling
+        document.querySelectorAll('[data-modal]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const modalType = btn.dataset.modal;
+                openModal(modalType);
+            });
+        });
+
+        document.getElementById('btn-add-ledger-modal').addEventListener('click', () => {
+            openModal('ledger');
+        });
+
+        modalClose.addEventListener('click', () => {
+            modalBackdrop.classList.remove('active');
+        });
+
+        modalBackdrop.addEventListener('click', (e) => {
+            if (e.target === modalBackdrop) {
+                modalBackdrop.classList.remove('active');
+            }
+        });
+
+        function openModal(type) {
+            currentModalType = type;
+            const template = document.getElementById(`modal-template-${type}`);
+            if (!template) return;
+
+            modalTitle.textContent = getModalTitle(type);
+            modalBody.innerHTML = '';
+            modalBody.appendChild(template.content.cloneNode(true));
+            
+            // Fill selects in modal
+            if (type === 'marketplace') {
+                const countryOptions = countries.map(item => ({ id: item.id, label: item.name }));
+                fillSelect(document.getElementById('modal-marketplace-country'), countryOptions, '-- Pays --');
+            }
+            if (type === 'ledger') {
+                const ledgerTypeEl = document.getElementById('modal-ledger-type');
+                if (ledgerTypeEl) {
+                    fillStaticSelect(ledgerTypeEl, ledgerTypeOptions, '-- Type --');
+                }
+            }
+            if (type === 'journal-entry') {
+                const journalNatureEl = document.getElementById('modal-journal-nature');
+                if (journalNatureEl) {
+                    fillStaticSelect(journalNatureEl, natureOptions, '-- Nature --');
+                }
+            }
+
+            modalBackdrop.classList.add('active');
+        }
+
+        function getModalTitle(type) {
+            const titles = {
+                category: 'Nouvelle catégorie',
+                country: 'Nouveau pays',
+                marketplace: 'Nouvelle place de marché',
+                currency: 'Nouvelle devise',
+                ledger: 'Nouveau compte',
+                'journal-entry': 'Nouvelle écriture comptable'
+            };
+            return titles[type] || 'Ajout rapide';
+        }
+
+        // Modal form submission
+        modalBody.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target.closest('form');
+            if (!form) return;
+
+            const modalType = form.dataset.modalForm;
+            const errorEl = document.getElementById('modal-error');
+            const successEl = document.getElementById('modal-success');
+            clearMessages(errorEl, successEl);
+
+            let payload = {};
+            let table = '';
+
+            switch (modalType) {
+                case 'category':
+                    payload = { name: document.getElementById('modal-category-name').value };
+                    table = 'category';
+                    break;
+                case 'country':
+                    payload = {
+                        name: document.getElementById('modal-country-name').value,
+                        symbol: document.getElementById('modal-country-symbol').value || null
+                    };
+                    table = 'country';
+                    break;
+                case 'marketplace':
+                    payload = {
+                        name: document.getElementById('modal-marketplace-name').value,
+                        country_id: document.getElementById('modal-marketplace-country').value || null,
+                        mic_code: document.getElementById('modal-marketplace-mic_code').value || null
+                    };
+                    table = 'marketplace';
+                    break;
+                case 'currency':
+                    payload = {
+                        name: document.getElementById('modal-currency-name').value,
+                        symbol: document.getElementById('modal-currency-symbol').value || null
+                    };
+                    table = 'currency';
+                    break;
+                case 'ledger':
+                    payload = {
+                        name: document.getElementById('modal-ledger-name').value,
+                        ledger_type: document.getElementById('modal-ledger-type').value
+                    };
+                    table = 'ledger';
+                    break;
+                case 'journal-entry':
+                    payload = { name: document.getElementById('modal-journal-name').value };
+                    table = 'journal_entry';
+                    break;
+            }
+
+            const { error } = await supabaseClient.from(table).insert(payload);
+            if (error) {
+                showMessage(errorEl, getErrorMessage(error));
+                return;
+            }
+
+            showMessage(successEl, 'Créé avec succès !');
+            await refreshAllData();
+            setTimeout(() => {
+                modalBackdrop.classList.remove('active');
+                clearMessages(errorEl, successEl);
+            }, 1500);
+        });
+
+        // Other forms
+        document.getElementById('country-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById('country-name').value,
+                symbol: document.getElementById('country-symbol').value || null
+            };
+            const { error } = await supabaseClient.from('country').insert(payload);
+            if (error) {
+                showFormFeedback('country', 'error', getErrorMessage(error));
+                return;
+            }
+            showFormFeedback('country', 'success', 'Pays créé !');
+            await refreshAllData();
+            e.target.reset();
+        });
+
+        document.getElementById('marketplace-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById('marketplace-name').value,
+                country_id: document.getElementById('marketplace-country').value || null,
+                mic_code: document.getElementById('marketplace-mic_code').value || null
+            };
+            const { error } = await supabaseClient.from('marketplace').insert(payload);
+            if (error) {
+                showFormFeedback('marketplace', 'error', getErrorMessage(error));
+                return;
+            }
+            showFormFeedback('marketplace', 'success', 'Place de marché créée !');
+            await refreshAllData();
+            e.target.reset();
+        });
+
+        document.getElementById('currency-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById('currency-name').value,
+                symbol: document.getElementById('currency-symbol').value || null
+            };
+            const { error } = await supabaseClient.from('currency').insert(payload);
+            if (error) {
+                showFormFeedback('currency', 'error', getErrorMessage(error));
+                return;
+            }
+            showFormFeedback('currency', 'success', 'Devise créée !');
+            await refreshAllData();
+            e.target.reset();
+        });
+
+        document.getElementById('category-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = { name: document.getElementById('category-name').value };
+            const { error } = await supabaseClient.from('category').insert(payload);
+            if (error) {
+                showFormFeedback('category', 'error', getErrorMessage(error));
+                return;
+            }
+            showFormFeedback('category', 'success', 'Catégorie créée !');
+            await refreshAllData();
+            e.target.reset();
+        });
+
+        document.getElementById('asset-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById('asset-name').value,
+                isin_code: document.getElementById('asset-isin').value,
+                ticker_yf: document.getElementById('asset-ticker').value,
+                category_id: document.getElementById('asset-category-select').value || null,
+                country_id: document.getElementById('asset-country-select').value || null,
+                marketplace_id: document.getElementById('asset-marketplace-select').value || null,
+                currency_id: document.getElementById('asset-currency-select').value || null
+            };
+            const { error } = await supabaseClient.from('asset').insert(payload);
+            if (error) {
+                showFormFeedback('asset', 'error', getErrorMessage(error));
+                return;
+            }
+            showFormFeedback('asset', 'success', 'Actif créé !');
+            await refreshAllData();
+            e.target.reset();
+        });
+
+        document.getElementById('portfolio-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                portfolio_name: document.getElementById('portfolio-name').value,
+                bank_name: document.getElementById('portfolio-bank').value,
+                account_number: document.getElementById('portfolio-account-number').value
+            };
+            const { error } = await supabaseClient.from('portfolio').insert(payload);
+            if (error) {
+                showFormFeedback('portfolio', 'error', getErrorMessage(error));
+                return;
+            }
+            showFormFeedback('portfolio', 'success', 'Portefeuille créé !');
+            await refreshAllData();
+            e.target.reset();
+        });
+
+        document.getElementById('operation-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = { name: document.getElementById('operation-name').value };
+            const { error } = await supabaseClient.from('operation').insert(payload);
+            if (error) {
+                showFormFeedback('operation', 'error', getErrorMessage(error));
+                return;
+            }
+            showFormFeedback('operation', 'success', 'Opération créée !');
+            await refreshAllData();
+            e.target.reset();
+        });
+
+        document.getElementById('journal-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById('journal-name').value,
+                nature: document.getElementById('journal-nature').value
+            };
+            const { error } = await supabaseClient.from('journal_entry').insert(payload);
+            if (error) {
+                showFormFeedback('journal', 'error', getErrorMessage(error));
+                return;
+            }
+            showFormFeedback('journal', 'success', 'Écriture créée !');
+            await refreshAllData();
+            e.target.reset();
+        });
+
+        // Movement form
+        document.getElementById('movement-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                entry_id: movementDom.entrySelect.value,
+                ledger_id: movementDom.ledgerSelect.value,
+                portfolio_id: movementDom.portfolioSelect.value || null,
+                asset_id: movementDom.assetSelect.value || null,
+                accounting_side: movementDom.sideSelect.value,
+                amount: movementDom.amountInput.value || null,
+                quantity: movementDom.quantityInput.value || null
+            };
+            const { error } = await supabaseClient.from('movement').insert(payload);
+            if (error) {
+                showFormFeedback('movement', 'error', getErrorMessage(error));
+                return;
+            }
+            showFormFeedback('movement', 'success', 'Mouvement créé !');
+            await refreshAllData();
+            e.target.reset();
+        });
+
+        // Ledger filters
+        document.getElementById('ledger-portfolio-filter').addEventListener('change', renderTAccounts);
+        document.getElementById('ledger-asset-filter').addEventListener('change', renderTAccounts);
+
+        // Balance toggle button
+        const balanceToggleBtn = document.getElementById('balance-toggle-btn');
+        const balanceContent = document.getElementById('balance-content');
+        const grandJournalPanel = document.getElementById('grand-journal-panel');
+        const balanceOpenIcon = document.getElementById('balance-open-icon');
+        
+        balanceToggleBtn.addEventListener('click', () => {
+            grandJournalPanel.classList.add('hidden');
+            balanceOpenIcon.style.display = 'flex';
+            balanceToggleBtn.textContent = '✕';
+        });
+
+        // Balance open icon
+        balanceOpenIcon.addEventListener('click', () => {
+            grandJournalPanel.classList.remove('hidden');
+            balanceOpenIcon.style.display = 'none';
+            balanceToggleBtn.textContent = '✕';
+        });
+
+        // =========================================================
+        // Trade form - Gestion du déblocage lors de la sélection d'une opération
+        // =========================================================
+        if (tradeDom && tradeDom.operationSelect) {
+            tradeDom.operationSelect.addEventListener('change', () => {
+                const selectedOperationId = tradeDom.operationSelect.value;
+                
+                // Réinitialiser l'état du formulaire
+                tradeDom.standardBlock.classList.add('hidden');
+                tradeDom.transferBlock.classList.add('hidden');
+                tradeDom.rowsContainer.innerHTML = '';
+                tradeDom.helper.style.display = 'none';
+                
+                // Débloquer la date
+                tradeDom.dateInput.disabled = false;
+                
+                if (!selectedOperationId) {
+                    // Aucune opération sélectionnée
+                    tradeDom.helper.style.display = 'block';
+                    tradeDom.dateInput.disabled = true;
+                    return;
+                }
+                
+                // Trouver l'opération sélectionnée
+                const operation = operations.find(op => op.id === selectedOperationId);
+                if (!operation) return;
+                
+                // Vérifier si c'est un transfert ou une opération standard
+                const isTransfer = operation.name && operation.name.toLowerCase().includes('transfert');
+                
+                if (isTransfer) {
+                    // Afficher le bloc transfert
+                    tradeDom.transferBlock.classList.remove('hidden');
+                    
+                    // Débloquer les selects du bloc transfert
+                    tradeDom.startPortfolioSelect.disabled = false;
+                    tradeDom.endPortfolioSelect.disabled = false;
+                    tradeDom.startAssetSelect.disabled = false;
+                    tradeDom.endAssetSelect.disabled = false;
+                    
+                    // Masquer les éléments du bloc standard
+                    tradeDom.standardPortfolioSelect.disabled = true;
+                    tradeDom.standardAssetSelect.disabled = true;
+                } else {
+                    // Afficher le bloc standard
+                    tradeDom.standardBlock.classList.remove('hidden');
+                    
+                    // Débloquer les selects du bloc standard
+                    tradeDom.standardPortfolioSelect.disabled = false;
+                    tradeDom.standardAssetSelect.disabled = false;
+                    
+                    // Masquer les éléments du bloc transfert
+                    tradeDom.startPortfolioSelect.disabled = true;
+                    tradeDom.endPortfolioSelect.disabled = true;
+                    tradeDom.startAssetSelect.disabled = true;
+                    tradeDom.endAssetSelect.disabled = true;
+                }
+                
+                // Générer les lignes d'écritures comptables (exemple simple)
+                // À adapter selon la structure réelle des opérations
+                tradeDom.rowsContainer.innerHTML = `
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Lignes d'écritures à saisir</label>
+                            <p class="helper">Sélectionnez les portefeuilles et actifs pour générer les écritures.</p>
+                        </div>
+                    </div>
+                `;
+                
+                // Débloquer le bouton de soumission
+                tradeDom.submit.disabled = false;
+            });
+            
+            // Initialisation : désactiver tous les champs sauf la sélection d'opération
+            tradeDom.dateInput.disabled = true;
+            tradeDom.standardPortfolioSelect.disabled = true;
+            tradeDom.standardAssetSelect.disabled = true;
+            tradeDom.startPortfolioSelect.disabled = true;
+            tradeDom.endPortfolioSelect.disabled = true;
+            tradeDom.startAssetSelect.disabled = true;
+            tradeDom.endAssetSelect.disabled = true;
+            tradeDom.submit.disabled = true;
+        }
+
+        // Initialize
+        console.log('Dashboard Comptable v.0.0.3 prêt');
+    </script>
+</body>
+</html>

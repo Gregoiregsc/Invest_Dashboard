@@ -1,15 +1,1 @@
-# Web artifacts
-*.html.swp
-*.tmp
-
-# Environment
-.env
-.env.local
-*.env.*
-
-# Editors
-.vscode/
-.idea/
-
-# Logs
-*.log
+Nothing needs to be added to .gitignore since only an HTML file was added, which is a source/config file.
