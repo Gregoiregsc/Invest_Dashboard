@@ -439,7 +439,7 @@
             position: fixed;
             bottom: 20px;
             right: 20px;
-            width: 280px;
+            width: 320px;
             background: var(--panel);
             border: 1px solid var(--border);
             border-radius: 10px;
@@ -452,32 +452,6 @@
             opacity: 0;
             pointer-events: none;
             transform: translateX(320px);
-        }
-
-        /* Bouton flottant pour réafficher la balance */
-        .balance-show-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: #fff;
-            border: none;
-            box-shadow: 0 2px 8px rgba(20, 89, 199, 0.4);
-            cursor: pointer;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            z-index: 99;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .balance-show-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 12px rgba(20, 89, 199, 0.5);
         }
 
         .grand-journal-header {
@@ -512,15 +486,11 @@
 
         .grand-journal-content {
             padding: 10px;
-            max-height: 300px;
-            overflow-y: auto;
         }
 
         /* Style pour le compte en T de la balance générale */
         .balance-t-container {
             margin-top: 6px;
-            width: calc(100% + 40px);
-            margin-left: -20px;
         }
 
         .balance-t-shape {
@@ -528,7 +498,6 @@
             grid-template-columns: 1fr 1fr;
             border-top: 2px solid var(--text);
             position: relative;
-            min-height: 80px;
             margin-top: 4px;
             background: #fafbfc;
             border-radius: 6px;
@@ -548,26 +517,26 @@
 
         .balance-t-side {
             padding: 6px;
-            overflow-y: auto;
-            max-height: 150px;
             display: flex;
             flex-direction: column;
+            min-height: 60px;
         }
 
         .balance-t-side-title {
             font-weight: 700;
             font-size: 11px;
             color: var(--text);
-            padding-bottom: 4px;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 4px;
+            padding-top: 4px;
             text-align: center;
+            border-top: 1px solid var(--border);
+            margin-top: 4px;
         }
 
         #balance-debit-ledgers,
         #balance-credit-ledgers {
             flex: 1;
             overflow-y: auto;
+            max-height: 200px;
         }
 
         .balance-ledger-row {
@@ -630,11 +599,11 @@
         .balance-total-in-table {
             display: flex;
             justify-content: center;
-            padding: 8px 6px;
-            font-size: 11px;
+            padding: 6px 4px;
+            font-size: 10px;
             font-weight: 700;
-            border-top: 2px solid var(--text);
-            margin-top: auto;
+            border-top: 1px solid var(--text);
+            margin-top: 4px;
             background: #fff;
         }
         
@@ -1081,18 +1050,18 @@
                         <div class="balance-t-container">
                             <div class="balance-t-shape">
                                 <div class="balance-t-side">
-                                    <div class="balance-t-side-title">Débit</div>
                                     <div id="balance-debit-ledgers"></div>
                                     <div class="balance-total-in-table">
                                         <span id="gj-total-debit">0,00</span>
                                     </div>
+                                    <div class="balance-t-side-title">Débit</div>
                                 </div>
                                 <div class="balance-t-side">
-                                    <div class="balance-t-side-title">Crédit</div>
                                     <div id="balance-credit-ledgers"></div>
                                     <div class="balance-total-in-table">
                                         <span id="gj-total-credit">0,00</span>
                                     </div>
+                                    <div class="balance-t-side-title">Crédit</div>
                                 </div>
                             </div>
                         </div>
