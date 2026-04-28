@@ -1594,9 +1594,12 @@
             fillSelect(document.getElementById('asset-marketplace-select'), marketplaceOptions, '-- Place --');
             fillSelect(document.getElementById('marketplace-country'), countryOptions, '-- Pays --');
 
-            // Journal form
-            fillStaticSelect(document.getElementById('journal-nature'), natureOptions, '-- Nature --');
-            fillStaticSelect(document.getElementById('ledger-type'), ledgerTypeOptions, '-- Type --');
+            // Journal form - uniquement si les éléments existent (page active)
+            const journalNatureEl = document.getElementById('journal-nature');
+            if (journalNatureEl) {
+                fillStaticSelect(journalNatureEl, natureOptions, '-- Nature --');
+            }
+            // Note: 'ledger-type' n'existe pas dans le formulaire principal, seulement dans le modal
 
             // Trade form - vérification que tradeDom est initialisé
             if (tradeDom) {
@@ -2241,10 +2244,16 @@
                 fillSelect(document.getElementById('modal-marketplace-country'), countryOptions, '-- Pays --');
             }
             if (type === 'ledger') {
-                fillStaticSelect(document.getElementById('modal-ledger-type'), ledgerTypeOptions, '-- Type --');
+                const ledgerTypeEl = document.getElementById('modal-ledger-type');
+                if (ledgerTypeEl) {
+                    fillStaticSelect(ledgerTypeEl, ledgerTypeOptions, '-- Type --');
+                }
             }
             if (type === 'journal-entry') {
-                fillStaticSelect(document.getElementById('modal-journal-nature'), natureOptions, '-- Nature --');
+                const journalNatureEl = document.getElementById('modal-journal-nature');
+                if (journalNatureEl) {
+                    fillStaticSelect(journalNatureEl, natureOptions, '-- Nature --');
+                }
             }
 
             modalBackdrop.classList.add('active');
