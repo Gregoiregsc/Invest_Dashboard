@@ -445,52 +445,19 @@
             border-radius: 10px;
             box-shadow: var(--shadow);
             z-index: 100;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-
-        .grand-journal-panel.collapsed {
-            opacity: 0;
-            pointer-events: none;
-            transform: translateX(320px);
-        }
-
-        .grand-journal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            background: var(--panel-alt);
-            border-bottom: 1px solid var(--border);
-            border-radius: 10px 10px 0 0;
-            cursor: pointer;
-        }
-
-        .grand-journal-header h3 {
-            font-size: 12px;
-            color: var(--text);
-        }
-
-        .grand-journal-toggle {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: var(--primary);
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-        }
-
-        .grand-journal-content {
-            padding: 10px;
         }
 
         /* Style pour le compte en T de la balance générale */
+        .balance-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            padding: 8px 12px 4px 12px;
+        }
+
         .balance-t-container {
             margin-top: 0;
+            padding: 0 12px 12px 12px;
         }
 
         .balance-t-shape {
@@ -519,6 +486,7 @@
             padding: 6px;
             display: flex;
             flex-direction: column;
+            min-width: 0;
         }
 
         .balance-t-side-title {
@@ -542,9 +510,11 @@
         .balance-ledger-row {
             display: flex;
             justify-content: space-between;
+            align-items: flex-start;
             padding: 3px 6px;
             font-size: 10px;
             border-bottom: 1px solid #f0f0f0;
+            gap: 6px;
         }
 
         .balance-ledger-row:last-child {
@@ -559,6 +529,7 @@
             text-overflow: ellipsis;
             margin-right: 4px;
             word-break: break-word;
+            line-height: 1.2;
         }
 
         .balance-ledger-amount {
@@ -567,6 +538,7 @@
             font-size: 10px;
             white-space: nowrap;
             margin-left: 4px;
+            text-align: right;
         }
 
         .balance-total-row {
@@ -861,14 +833,6 @@
                 width: calc(100% - 48px);
                 right: 24px;
             }
-            .grand-journal-panel.collapsed {
-                transform: translateX(calc(100% - 72px));
-            }
-            .balance-show-btn {
-                width: 48px;
-                height: 48px;
-                font-size: 20px;
-            }
         }
     </style>
 </head>
@@ -1045,38 +1009,30 @@
 
                 <!-- Grand Journal Panel -->
                 <div class="grand-journal-panel" id="grand-journal-panel">
-                    <div class="grand-journal-header" id="grand-journal-header">
-                        <h3>📊 Balance Générale</h3>
-                        <button class="grand-journal-toggle" id="grand-journal-toggle">▼</button>
-                    </div>
-                    <div class="grand-journal-content" id="grand-journal-content">
-                        <div class="balance-t-container">
-                            <div class="balance-t-shape">
-                                <div class="balance-t-side">
-                                    <div id="balance-debit-ledgers"></div>
-                                    <div class="balance-total-in-table">
-                                        <span id="gj-total-debit">0,00</span>
-                                    </div>
-                                    <div class="balance-t-side-title">Débit</div>
+                    <div class="balance-title">Balance Générale</div>
+                    <div class="balance-t-container">
+                        <div class="balance-t-shape">
+                            <div class="balance-t-side">
+                                <div class="balance-t-side-title">Débit</div>
+                                <div id="balance-debit-ledgers"></div>
+                                <div class="balance-total-in-table">
+                                    <span id="gj-total-debit">0,00</span>
                                 </div>
-                                <div class="balance-t-side">
-                                    <div id="balance-credit-ledgers"></div>
-                                    <div class="balance-total-in-table">
-                                        <span id="gj-total-credit">0,00</span>
-                                    </div>
-                                    <div class="balance-t-side-title">Crédit</div>
+                            </div>
+                            <div class="balance-t-side">
+                                <div class="balance-t-side-title">Crédit</div>
+                                <div id="balance-credit-ledgers"></div>
+                                <div class="balance-total-in-table">
+                                    <span id="gj-total-credit">0,00</span>
                                 </div>
                             </div>
                         </div>
-                        <div class="balance-balance-row" id="balance-balance-row">
-                            <span>Écart</span>
-                            <span id="gj-balance">0,00</span>
-                        </div>
+                    </div>
+                    <div class="balance-balance-row" id="balance-balance-row">
+                        <span>Écart</span>
+                        <span id="gj-balance">0,00</span>
                     </div>
                 </div>
-                
-                <!-- Bouton pour réafficher la balance -->
-                <button class="balance-show-btn" id="balance-show-btn" title="Afficher la balance">📊</button>
             </div>
 
             <!-- Page: Other Forms -->
@@ -1536,10 +1492,6 @@
         const ledgerSidebarToggle = document.getElementById('ledger-sidebar-toggle');
         const ledgerCanvasContainer = document.getElementById('ledger-canvas-container');
         const ledgerCanvas = document.getElementById('ledger-canvas');
-        const grandJournalPanel = document.getElementById('grand-journal-panel');
-        const grandJournalToggle = document.getElementById('grand-journal-toggle');
-        const grandJournalHeader = document.getElementById('grand-journal-header');
-        const balanceShowBtn = document.getElementById('balance-show-btn');
 
         // Trade form
         const tradeDom = {
@@ -2378,39 +2330,6 @@
         ledgerSidebarToggle.addEventListener('click', () => {
             ledgerSidebar.classList.toggle('collapsed');
             ledgerSidebarToggle.textContent = ledgerSidebar.classList.contains('collapsed') ? '▶' : '◀';
-        });
-
-        // Grand Journal toggle
-        grandJournalToggle.addEventListener('click', (e) => {
-            e.stopPropagation();
-            grandJournalPanel.classList.toggle('collapsed');
-            grandJournalToggle.textContent = grandJournalPanel.classList.contains('collapsed') ? '▲' : '▼';
-            
-            // Show/hide the show button
-            if (grandJournalPanel.classList.contains('collapsed')) {
-                balanceShowBtn.style.display = 'flex';
-            } else {
-                balanceShowBtn.style.display = 'none';
-            }
-        });
-
-        grandJournalHeader.addEventListener('click', () => {
-            grandJournalPanel.classList.toggle('collapsed');
-            grandJournalToggle.textContent = grandJournalPanel.classList.contains('collapsed') ? '▲' : '▼';
-            
-            // Show/hide the show button
-            if (grandJournalPanel.classList.contains('collapsed')) {
-                balanceShowBtn.style.display = 'flex';
-            } else {
-                balanceShowBtn.style.display = 'none';
-            }
-        });
-        
-        // Bouton pour réafficher la balance
-        balanceShowBtn.addEventListener('click', () => {
-            grandJournalPanel.classList.remove('collapsed');
-            grandJournalToggle.textContent = '▼';
-            balanceShowBtn.style.display = 'none';
         });
 
         // Modal handling
