@@ -447,12 +447,49 @@
             z-index: 100;
         }
 
-        /* Style pour le compte en T de la balance générale */
+        .balance-toggle-btn {
+            display: inline-block;
+            font-size: 9px;
+            color: var(--muted);
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 2px 6px;
+            cursor: pointer;
+            margin-left: 8px;
+            transition: all 0.2s;
+        }
+
+        .balance-toggle-btn:hover {
+            background: rgba(20, 89, 199, 0.05);
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .balance-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px 4px 12px;
+        }
+
+        .balance-title-wrapper {
+            display: flex;
+            align-items: center;
+        }
+
         .balance-title {
             font-size: 13px;
             font-weight: 600;
             color: var(--text);
-            padding: 8px 12px 4px 12px;
+        }
+
+        .balance-content {
+            display: block;
+        }
+
+        .balance-content.hidden {
+            display: none;
         }
 
         .balance-t-container {
@@ -1009,28 +1046,35 @@
 
                 <!-- Grand Journal Panel -->
                 <div class="grand-journal-panel" id="grand-journal-panel">
-                    <div class="balance-title">Balance Générale</div>
-                    <div class="balance-t-container">
-                        <div class="balance-t-shape">
-                            <div class="balance-t-side">
-                                <div class="balance-t-side-title">Débit</div>
-                                <div id="balance-debit-ledgers"></div>
-                                <div class="balance-total-in-table">
-                                    <span id="gj-total-debit">0,00</span>
+                    <div class="balance-header-row">
+                        <div class="balance-title-wrapper">
+                            <span class="balance-title">Balance Générale</span>
+                            <button class="balance-toggle-btn" id="balance-toggle-btn">Réduire</button>
+                        </div>
+                    </div>
+                    <div class="balance-content" id="balance-content">
+                        <div class="balance-t-container">
+                            <div class="balance-t-shape">
+                                <div class="balance-t-side">
+                                    <div class="balance-t-side-title">Débit</div>
+                                    <div id="balance-debit-ledgers"></div>
+                                    <div class="balance-total-in-table">
+                                        <span id="gj-total-debit">0,00</span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="balance-t-side">
-                                <div class="balance-t-side-title">Crédit</div>
-                                <div id="balance-credit-ledgers"></div>
-                                <div class="balance-total-in-table">
-                                    <span id="gj-total-credit">0,00</span>
+                                <div class="balance-t-side">
+                                    <div class="balance-t-side-title">Crédit</div>
+                                    <div id="balance-credit-ledgers"></div>
+                                    <div class="balance-total-in-table">
+                                        <span id="gj-total-credit">0,00</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="balance-balance-row" id="balance-balance-row">
-                        <span>Écart</span>
-                        <span id="gj-balance">0,00</span>
+                        <div class="balance-balance-row" id="balance-balance-row">
+                            <span>Écart</span>
+                            <span id="gj-balance">0,00</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2619,6 +2663,20 @@
         // Ledger filters
         document.getElementById('ledger-portfolio-filter').addEventListener('change', renderTAccounts);
         document.getElementById('ledger-asset-filter').addEventListener('change', renderTAccounts);
+
+        // Balance toggle button
+        const balanceToggleBtn = document.getElementById('balance-toggle-btn');
+        const balanceContent = document.getElementById('balance-content');
+        
+        balanceToggleBtn.addEventListener('click', () => {
+            if (balanceContent.classList.contains('hidden')) {
+                balanceContent.classList.remove('hidden');
+                balanceToggleBtn.textContent = 'Réduire';
+            } else {
+                balanceContent.classList.add('hidden');
+                balanceToggleBtn.textContent = 'Développer';
+            }
+        });
 
         // Initialize
         console.log('Dashboard Comptable v.0.0.2 prêt');
