@@ -1,1 +1,4 @@
-Nothing should be ignored based on the provided file changes. The only modified file is `dashboard_v.0.0.3.html`, which appears to be a source code file and not a build artifact, dependency, or temporary file.
+```
+# Version-specific dashboard files
+dashboard_v.*.html
+```
