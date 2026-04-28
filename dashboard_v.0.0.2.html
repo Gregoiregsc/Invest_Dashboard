@@ -490,7 +490,7 @@
 
         /* Style pour le compte en T de la balance générale */
         .balance-t-container {
-            margin-top: 6px;
+            margin-top: 0;
         }
 
         .balance-t-shape {
@@ -498,7 +498,7 @@
             grid-template-columns: 1fr 1fr;
             border-top: 2px solid var(--text);
             position: relative;
-            margin-top: 4px;
+            margin-top: 8px;
             background: #fafbfc;
             border-radius: 6px;
             overflow: hidden;
@@ -519,24 +519,24 @@
             padding: 6px;
             display: flex;
             flex-direction: column;
-            min-height: 60px;
         }
 
         .balance-t-side-title {
             font-weight: 700;
             font-size: 11px;
             color: var(--text);
-            padding-top: 4px;
+            padding-bottom: 4px;
             text-align: center;
-            border-top: 1px solid var(--border);
-            margin-top: 4px;
+            border-bottom: 2px solid var(--text);
+            margin-bottom: 6px;
         }
 
         #balance-debit-ledgers,
         #balance-credit-ledgers {
             flex: 1;
             overflow-y: auto;
-            max-height: 200px;
+            max-height: 180px;
+            min-height: 40px;
         }
 
         .balance-ledger-row {
@@ -554,16 +554,19 @@
         .balance-ledger-name {
             color: var(--muted);
             flex: 1;
-            white-space: nowrap;
+            white-space: normal;
             overflow: hidden;
             text-overflow: ellipsis;
             margin-right: 4px;
+            word-break: break-word;
         }
 
         .balance-ledger-amount {
             font-weight: 600;
             color: var(--text);
             font-size: 10px;
+            white-space: nowrap;
+            margin-left: 4px;
         }
 
         .balance-total-row {
@@ -603,7 +606,7 @@
             font-size: 10px;
             font-weight: 700;
             border-top: 1px solid var(--text);
-            margin-top: 4px;
+            margin-top: auto;
             background: #fff;
         }
         
