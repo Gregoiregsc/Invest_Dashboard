@@ -1079,7 +1079,7 @@
                     <div class="balance-header-row">
                         <div class="balance-title-wrapper">
                             <span class="balance-title">Balance Générale</span>
-                            <button class="balance-toggle-btn" id="balance-toggle-btn" title="Fermer">▼</button>
+                            <button class="balance-toggle-btn" id="balance-toggle-btn" title="Fermer">✕</button>
                         </div>
                     </div>
                     <div class="balance-content" id="balance-content">
@@ -2706,12 +2706,14 @@
         balanceToggleBtn.addEventListener('click', () => {
             grandJournalPanel.classList.add('hidden');
             balanceOpenIcon.style.display = 'flex';
+            balanceToggleBtn.textContent = '✕';
         });
 
         // Balance open icon
         balanceOpenIcon.addEventListener('click', () => {
             grandJournalPanel.classList.remove('hidden');
             balanceOpenIcon.style.display = 'none';
+            balanceToggleBtn.textContent = '✕';
         });
 
         // Initialize
