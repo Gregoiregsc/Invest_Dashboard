@@ -619,15 +619,15 @@
         /* Style pour les totaux dans le tableau */
         .balance-total-in-table {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             padding: 4px 6px;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 700;
-            border-top: 1px solid var(--border);
-            margin-top: 4px;
+            border-top: 2px solid var(--text);
+            margin-top: 6px;
         }
         
-        .balance-total-in-table span:last-child {
+        .balance-total-in-table span {
             text-align: center;
             flex: 1;
         }
@@ -1073,7 +1073,6 @@
                                     <div class="balance-t-side-title">Débit</div>
                                     <div id="balance-debit-ledgers"></div>
                                     <div class="balance-total-in-table">
-                                        <span>Total Débit</span>
                                         <span id="gj-total-debit">0,00</span>
                                     </div>
                                 </div>
@@ -1081,7 +1080,6 @@
                                     <div class="balance-t-side-title">Crédit</div>
                                     <div id="balance-credit-ledgers"></div>
                                     <div class="balance-total-in-table">
-                                        <span>Total Crédit</span>
                                         <span id="gj-total-credit">0,00</span>
                                     </div>
                                 </div>
