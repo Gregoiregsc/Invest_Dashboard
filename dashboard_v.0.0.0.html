@@ -1,0 +1,2373 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Comptable</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #f3f6fb;
+            --panel: #ffffff;
+            --panel-alt: #f8fbff;
+            --border: #dbe4f0;
+            --text: #1f2937;
+            --muted: #667085;
+            --primary: #1459c7;
+            --primary-dark: #0d4293;
+            --success-bg: #e8f7ee;
+            --success-text: #166534;
+            --error-bg: #fdecec;
+            --error-text: #b42318;
+            --shadow: 0 20px 46px rgba(16, 24, 40, 0.08);
+        }
+
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(20, 89, 199, 0.10), transparent 28%),
+                linear-gradient(180deg, #f7f9fe 0%, #eef3fb 100%);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .page { display: none; max-width: 1360px; margin: 0 auto; }
+        .page.active { display: block; }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            box-shadow: var(--shadow);
+            padding: 26px;
+        }
+
+        .login-card { max-width: 440px; margin: 72px auto 0; }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        h1 { font-size: 28px; margin-bottom: 8px; }
+        h2 { font-size: 20px; margin-bottom: 10px; }
+        h3 { font-size: 16px; margin-bottom: 10px; color: var(--primary); }
+
+        .subtitle, .helper { color: var(--muted); }
+        .subtitle { margin-bottom: 22px; }
+        .helper { font-size: 13px; margin-top: 6px; }
+
+        .message {
+            display: none;
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 18px;
+            border: 1px solid transparent;
+            font-size: 14px;
+        }
+
+        .message.error { background: var(--error-bg); color: var(--error-text); border-color: #f6c4c4; }
+        .message.success { background: var(--success-bg); color: var(--success-text); border-color: #b7e4c7; }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .tab-btn {
+            border: 1px solid var(--border);
+            background: #fff;
+            color: var(--text);
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            background: rgba(20, 89, 199, 0.08);
+            color: var(--primary);
+            border-color: rgba(20, 89, 199, 0.4);
+        }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        .section-box {
+            background: var(--panel-alt);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 18px;
+        }
+
+        .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+        .form-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+        .form-grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+
+        .form-group { margin-bottom: 18px; }
+        .span-2 { grid-column: span 2; }
+
+        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
+
+        input, select, textarea {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 11px 13px;
+            font-size: 14px;
+            background: #fff;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: rgba(20, 89, 199, 0.55);
+            box-shadow: 0 0 0 4px rgba(20, 89, 199, 0.10);
+        }
+
+        textarea { min-height: 90px; resize: vertical; }
+
+        .btn-row { display: flex; gap: 12px; flex-wrap: wrap; }
+
+        .btn {
+            border: none;
+            border-radius: 12px;
+            padding: 12px 18px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: #eef2f7; color: var(--text); border: 1px solid var(--border); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .select-with-add {
+            display: grid;
+            grid-template-columns: 1fr 42px;
+            gap: 8px;
+            align-items: end;
+        }
+
+        .icon-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: #fff;
+            color: var(--primary);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .entry-row {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 16px;
+        }
+
+        .hidden { display: none !important; }
+
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.46);
+            padding: 24px;
+            z-index: 1000;
+            overflow: auto;
+        }
+
+        .modal-backdrop.active { display: block; }
+
+        .modal-card {
+            max-width: 760px;
+            margin: 30px auto;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            box-shadow: var(--shadow);
+            padding: 24px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .close-btn {
+            border: 1px solid var(--border);
+            background: #fff;
+            border-radius: 12px;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        .t-accounts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .t-account {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 18px;
+        }
+
+        .t-shape {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border-top: 2px solid var(--text);
+            position: relative;
+            min-height: 180px;
+        }
+
+        .t-shape::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 2px;
+            background: var(--text);
+            transform: translateX(-50%);
+        }
+
+        .t-side { padding: 14px 16px 0 16px; }
+        .movement-line, .movement-total {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 13px;
+        }
+
+        .movement-line {
+            padding: 6px 0;
+            border-bottom: 1px dashed #e6edf7;
+        }
+
+        .movement-total {
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+            font-weight: 700;
+        }
+
+        @media (max-width: 900px) {
+            .form-grid, .form-grid-3, .form-grid-4, .t-accounts-grid { grid-template-columns: 1fr; }
+            .span-2 { grid-column: span 1; }
+            .topbar { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+    <section id="login-page" class="page active">
+        <div class="card login-card">
+            <h1>Connexion</h1>
+            <p class="subtitle">Connecte-toi avec ton compte Supabase pour gérer tes formulaires comptables.</p>
+            <div id="login-error" class="message error"></div>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" autocomplete="username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="login-password">Mot de passe</label>
+                    <input type="password" id="login-password" autocomplete="current-password" required>
+                </div>
+
+                <div class="btn-row">
+                    <button id="btn-login" class="btn btn-primary" type="submit">Se connecter</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section id="app-page" class="page">
+        <div class="topbar">
+            <div class="card" style="flex: 1;">
+                <strong>Session</strong>
+                <div id="session-info" class="helper"></div>
+            </div>
+
+            <div class="btn-row">
+                <button id="btn-refresh" class="btn btn-secondary" type="button">Rafraîchir les listes</button>
+                <button id="btn-logout" class="btn btn-secondary" type="button">Déconnexion</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h1>Dashboard Comptable</h1>
+            <p class="subtitle">Formulaires principaux, ajouts rapides en pop up et visualisation comptable.</p>
+
+            <div id="global-error" class="message error"></div>
+            <div id="global-success" class="message success"></div>
+
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="asset">Asset</button>
+                <button class="tab-btn" data-tab="entry">Entry</button>
+                <button class="tab-btn" data-tab="operation">Operation</button>
+                <button class="tab-btn" data-tab="journal-entry">Journal Entry</button>
+                <button class="tab-btn" data-tab="ledger">Ledger</button>
+                <button class="tab-btn" data-tab="portfolio">Portfolio</button>
+                <button class="tab-btn" data-tab="secondary">SECONDAIRE</button>
+                <button class="tab-btn" data-tab="movement">Movement</button>
+                <button class="tab-btn" data-tab="taccounts">Comptes en T</button>
+            </div>
+
+            <section id="tab-asset" class="tab-panel active">
+                <h2>Ajouter un asset</h2>
+                <div id="asset-error" class="message error"></div>
+                <div id="asset-success" class="message success"></div>
+
+                <form id="asset-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="asset-name">Nom</label>
+                            <input type="text" id="asset-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="asset-isin">Code ISIN</label>
+                            <input type="text" id="asset-isin" required>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="asset-ticker">Ticker Yahoo Finance</label>
+                            <input type="text" id="asset-ticker" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Catégorie</label>
+                            <div class="select-with-add">
+                                <select id="asset-category-select"></select>
+                                <button class="icon-btn" type="button" data-modal="category">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-grid-3">
+                        <div class="form-group">
+                            <label>Country</label>
+                            <div class="select-with-add">
+                                <select id="asset-country-select"></select>
+                                <button class="icon-btn" type="button" data-modal="country">+</button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Marketplace</label>
+                            <div class="select-with-add">
+                                <select id="asset-marketplace-select"></select>
+                                <button class="icon-btn" type="button" data-modal="marketplace">+</button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Currency</label>
+                            <div class="select-with-add">
+                                <select id="asset-currency-select"></select>
+                                <button class="icon-btn" type="button" data-modal="currency">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="btn-row">
+                        <button class="btn btn-primary" type="submit">Créer l'asset</button>
+                    </div>
+                </form>
+            </section>
+
+            <section id="tab-entry" class="tab-panel">
+                <h2>Ajouter une entry</h2>
+                <div id="entry-error" class="message error"></div>
+                <div id="entry-success" class="message success"></div>
+
+                <form id="entry-form">
+                    <div class="section-box">
+                        <h3>1. Sélection de l'opération</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="entry-operation-select">Opération</label>
+                                <select id="entry-operation-select" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="entry-date">Date</label>
+                                <input type="date" id="entry-date" required>
+                            </div>
+                        </div>
+                        <p id="entry-operation-helper" class="helper">Choisis une opération pour générer la structure du formulaire.</p>
+                    </div>
+
+                    <div id="entry-standard-block" class="section-box hidden">
+                        <h3>2. Référentiel standard</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="entry-standard-portfolio-select">Portefeuille</label>
+                                <select id="entry-standard-portfolio-select"></select>
+                            </div>
+                            <div id="entry-standard-asset-group" class="form-group">
+                                <label for="entry-standard-asset-select">Actif</label>
+                                <select id="entry-standard-asset-select"></select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="entry-transfer-block" class="section-box hidden">
+                        <h3>2. Référentiel transfert</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="entry-start-portfolio-select">Start Portfolio</label>
+                                <select id="entry-start-portfolio-select"></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="entry-end-portfolio-select">End Portfolio</label>
+                                <select id="entry-end-portfolio-select"></select>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div id="entry-start-asset-group" class="form-group">
+                                <label for="entry-start-asset-select">Start Asset</label>
+                                <select id="entry-start-asset-select"></select>
+                            </div>
+                            <div id="entry-end-asset-group" class="form-group">
+                                <label for="entry-end-asset-select">End Asset</label>
+                                <select id="entry-end-asset-select"></select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-box">
+                        <h3>3. Détail par journal entry</h3>
+                        <div id="entry-rows-container">
+                            <p class="helper">Aucune ligne à saisir pour l'instant.</p>
+                        </div>
+                    </div>
+
+                    <div class="btn-row">
+                        <button id="btn-entry-submit" class="btn btn-primary" type="submit">Créer les entries</button>
+                    </div>
+                </form>
+            </section>
+
+            <section id="tab-operation" class="tab-panel">
+                <h2>Ajouter une operation</h2>
+                <div id="operation-error" class="message error"></div>
+                <div id="operation-success" class="message success"></div>
+
+                <form id="operation-form">
+                    <div class="form-group">
+                        <label for="operation-name">Nom</label>
+                        <input type="text" id="operation-name" required>
+                    </div>
+
+                    <div class="form-grid-3">
+                        <div class="form-group">
+                            <label>Journal Entry 1</label>
+                            <div class="select-with-add">
+                                <select id="operation-journal-1"></select>
+                                <button class="icon-btn" type="button" data-modal="journal-entry">+</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Journal Entry 2</label>
+                            <div class="select-with-add">
+                                <select id="operation-journal-2"></select>
+                                <button class="icon-btn" type="button" data-modal="journal-entry">+</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Journal Entry 3</label>
+                            <div class="select-with-add">
+                                <select id="operation-journal-3"></select>
+                                <button class="icon-btn" type="button" data-modal="journal-entry">+</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Journal Entry 4</label>
+                            <div class="select-with-add">
+                                <select id="operation-journal-4"></select>
+                                <button class="icon-btn" type="button" data-modal="journal-entry">+</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Journal Entry 5</label>
+                            <div class="select-with-add">
+                                <select id="operation-journal-5"></select>
+                                <button class="icon-btn" type="button" data-modal="journal-entry">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="btn-row">
+                        <button class="btn btn-primary" type="submit">Créer l'operation</button>
+                    </div>
+                </form>
+            </section>
+
+            <section id="tab-journal-entry" class="tab-panel">
+                <h2>Ajouter un journal entry</h2>
+                <div id="journal-error" class="message error"></div>
+                <div id="journal-success" class="message success"></div>
+
+                <form id="journal-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="journal-name">Nom</label>
+                            <input type="text" id="journal-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="journal-nature">Nature</label>
+                            <select id="journal-nature" required></select>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="journal-cash-direction">Cash Direction</label>
+                            <input type="text" id="journal-cash-direction">
+                        </div>
+                        <div class="form-group">
+                            <label for="journal-position-direction">Position Direction</label>
+                            <input type="text" id="journal-position-direction">
+                        </div>
+                    </div>
+
+                    <div class="form-grid-4">
+                        <div class="form-group">
+                            <label for="journal-start-portfolio">Start Portfolio</label>
+                            <select id="journal-start-portfolio">
+                                <option value="">--</option>
+                                <option value="true">True</option>
+                                <option value="false">False</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="journal-end-portfolio">End Portfolio</label>
+                            <select id="journal-end-portfolio">
+                                <option value="">--</option>
+                                <option value="true">True</option>
+                                <option value="false">False</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="journal-start-asset">Start Asset</label>
+                            <select id="journal-start-asset">
+                                <option value="">--</option>
+                                <option value="true">True</option>
+                                <option value="false">False</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="journal-end-asset">End Asset</label>
+                            <select id="journal-end-asset">
+                                <option value="">--</option>
+                                <option value="true">True</option>
+                                <option value="false">False</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="journal-is-cash">Is Cash</label>
+                            <select id="journal-is-cash">
+                                <option value="">--</option>
+                                <option value="true">True</option>
+                                <option value="false">False</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="journal-realized-pnl">Realized P&L</label>
+                            <select id="journal-realized-pnl">
+                                <option value="">--</option>
+                                <option value="true">True</option>
+                                <option value="false">False</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="journal-affects-cost-basis">Affects Cost Basis</label>
+                            <select id="journal-affects-cost-basis">
+                                <option value="">--</option>
+                                <option value="true">True</option>
+                                <option value="false">False</option>
+                            </select>
+                        </div>
+                        <div class="form-group"></div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Start Ledger</label>
+                            <div class="select-with-add">
+                                <select id="journal-start-ledger-select"></select>
+                                <button class="icon-btn" type="button" data-modal="ledger">+</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>End Ledger</label>
+                            <div class="select-with-add">
+                                <select id="journal-end-ledger-select"></select>
+                                <button class="icon-btn" type="button" data-modal="ledger">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="btn-row">
+                        <button class="btn btn-primary" type="submit">Créer le journal entry</button>
+                    </div>
+                </form>
+            </section>
+
+            <section id="tab-ledger" class="tab-panel">
+                <h2>Ajouter un ledger</h2>
+                <div id="ledger-error" class="message error"></div>
+                <div id="ledger-success" class="message success"></div>
+
+                <form id="ledger-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="ledger-name">Nom</label>
+                            <input type="text" id="ledger-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="ledger-type">Ledger Type</label>
+                            <select id="ledger-type" required></select>
+                        </div>
+                    </div>
+
+                    <div class="btn-row">
+                        <button class="btn btn-primary" type="submit">Créer le ledger</button>
+                    </div>
+                </form>
+            </section>
+
+            <section id="tab-portfolio" class="tab-panel">
+                <h2>Ajouter un portfolio</h2>
+                <div id="portfolio-error" class="message error"></div>
+                <div id="portfolio-success" class="message success"></div>
+
+                <form id="portfolio-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="portfolio-name">Nom du portefeuille</label>
+                            <input type="text" id="portfolio-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="portfolio-bank">Banque</label>
+                            <input type="text" id="portfolio-bank" required>
+                        </div>
+                    </div>
+
+                    <div class="form-grid-3">
+                        <div class="form-group">
+                            <label for="portfolio-account-number">Numéro de compte</label>
+                            <input type="text" id="portfolio-account-number" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="portfolio-opening-date">Date d'ouverture</label>
+                            <input type="date" id="portfolio-opening-date">
+                        </div>
+                        <div class="form-group">
+                            <label for="portfolio-tax-rate">Taux fiscal</label>
+                            <input type="number" step="any" id="portfolio-tax-rate">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="portfolio-type">Type</label>
+                        <input type="text" id="portfolio-type">
+                    </div>
+
+                    <div class="btn-row">
+                        <button class="btn btn-primary" type="submit">Créer le portfolio</button>
+                    </div>
+                </form>
+            </section>
+
+            <section id="tab-secondary" class="tab-panel">
+                <h2>SECONDAIRE</h2>
+                <p class="subtitle">Référentiels auxiliaires.</p>
+
+                <div class="form-grid-4">
+                    <div class="section-box">
+                        <h3>Country</h3>
+                        <div id="country-error" class="message error"></div>
+                        <div id="country-success" class="message success"></div>
+                        <form id="country-form">
+                            <div class="form-group">
+                                <label for="country-name">Nom</label>
+                                <input type="text" id="country-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="country-symbol">Symbole</label>
+                                <input type="text" id="country-symbol">
+                            </div>
+                            <button class="btn btn-primary" type="submit">Créer</button>
+                        </form>
+                    </div>
+
+                    <div class="section-box">
+                        <h3>Marketplace</h3>
+                        <div id="marketplace-error" class="message error"></div>
+                        <div id="marketplace-success" class="message success"></div>
+                        <form id="marketplace-form">
+                            <div class="form-group">
+                                <label for="marketplace-name">Nom</label>
+                                <input type="text" id="marketplace-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="marketplace-country">Pays</label>
+                                <select id="marketplace-country"></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="marketplace-mic_code">Code MIC</label>
+                                <input type="text" id="marketplace-mic_code">
+                            </div>
+                            <button class="btn btn-primary" type="submit">Créer</button>
+                        </form>
+                    </div>
+
+                    <div class="section-box">
+                        <h3>Currency</h3>
+                        <div id="currency-error" class="message error"></div>
+                        <div id="currency-success" class="message success"></div>
+                        <form id="currency-form">
+                            <div class="form-group">
+                                <label for="currency-name">Nom</label>
+                                <input type="text" id="currency-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="currency-symbol">Symbole</label>
+                                <input type="text" id="currency-symbol">
+                            </div>
+                            <button class="btn btn-primary" type="submit">Créer</button>
+                        </form>
+                    </div>
+
+                    <div class="section-box">
+                        <h3>Category</h3>
+                        <div id="category-error" class="message error"></div>
+                        <div id="category-success" class="message success"></div>
+                        <form id="category-form">
+                            <div class="form-group">
+                                <label for="category-name">Nom</label>
+                                <input type="text" id="category-name" required>
+                            </div>
+                            <button class="btn btn-primary" type="submit">Créer</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-movement" class="tab-panel">
+                <h2>Ajouter un movement</h2>
+                <div id="movement-error" class="message error"></div>
+                <div id="movement-success" class="message success"></div>
+
+                <form id="movement-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="movement-entry-select">Entry</label>
+                            <select id="movement-entry-select" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="movement-ledger-select">Ledger</label>
+                            <select id="movement-ledger-select" required></select>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="movement-portfolio-select">Portfolio</label>
+                            <select id="movement-portfolio-select"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="movement-asset-select">Asset</label>
+                            <select id="movement-asset-select"></select>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="movement-side-select">Accounting Side</label>
+                            <select id="movement-side-select" required>
+                                <option value="">-- Sélectionner --</option>
+                                <option value="debit">Debit</option>
+                                <option value="credit">Credit</option>
+                            </select>
+                        </div>
+                        <div class="form-group"></div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div id="movement-amount-group" class="form-group">
+                            <label for="movement-amount">Amount</label>
+                            <input type="number" step="any" id="movement-amount">
+                        </div>
+                        <div id="movement-quantity-group" class="form-group">
+                            <label for="movement-quantity">Quantity</label>
+                            <input type="number" step="any" id="movement-quantity">
+                        </div>
+                    </div>
+
+                    <div class="helper" id="movement-entry-helper">Choisis une entry pour adapter amount/quantity selon `is_cash`.</div>
+
+                    <div class="btn-row">
+                        <button class="btn btn-primary" type="submit">Créer le movement</button>
+                    </div>
+                </form>
+            </section>
+
+            <section id="tab-taccounts" class="tab-panel">
+                <h2>Comptes en T</h2>
+                <p class="subtitle">Visualisation des movements par ledger, avec zoom portfolio et asset.</p>
+
+                <div class="section-box">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="taccount-portfolio-filter">Portfolio</label>
+                            <select id="taccount-portfolio-filter"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="taccount-asset-filter">Asset</label>
+                            <select id="taccount-asset-filter"></select>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="taccounts-empty" class="helper">Aucun mouvement à afficher.</div>
+                <div id="taccounts-grid" class="t-accounts-grid"></div>
+            </section>
+        </div>
+    </section>
+
+    <div id="modal-backdrop" class="modal-backdrop">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div>
+                    <h2 id="modal-title">Ajout rapide</h2>
+                    <p id="modal-subtitle" class="helper">Le formulaire s'ouvre sans réinitialiser la page en cours.</p>
+                </div>
+                <button id="modal-close" class="close-btn" type="button">Fermer</button>
+            </div>
+            <div id="modal-error" class="message error"></div>
+            <div id="modal-success" class="message success"></div>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <template id="modal-template-category">
+        <form data-modal-form="category">
+            <div class="form-group">
+                <label for="modal-category-name">Nom</label>
+                <input type="text" id="modal-category-name" required>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Créer la catégorie</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="modal-template-country">
+        <form data-modal-form="country">
+            <div class="form-group">
+                <label for="modal-country-name">Nom</label>
+                <input type="text" id="modal-country-name" required>
+            </div>
+            <div class="form-group">
+                <label for="modal-country-symbol">Symbole</label>
+                <input type="text" id="modal-country-symbol">
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Créer le country</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="modal-template-marketplace">
+        <form data-modal-form="marketplace">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="modal-marketplace-name">Nom</label>
+                    <input type="text" id="modal-marketplace-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="modal-marketplace-country">Pays</label>
+                    <select id="modal-marketplace-country"></select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="modal-marketplace-mic_code">MIC Code</label>
+                <input type="text" id="modal-marketplace-mic_code">
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Créer le marketplace</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="modal-template-currency">
+        <form data-modal-form="currency">
+            <div class="form-group">
+                <label for="modal-currency-name">Nom</label>
+                <input type="text" id="modal-currency-name" required>
+            </div>
+            <div class="form-group">
+                <label for="modal-currency-symbol">Symbole</label>
+                <input type="text" id="modal-currency-symbol">
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Créer la currency</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="modal-template-ledger">
+        <form data-modal-form="ledger">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="modal-ledger-name">Nom</label>
+                    <input type="text" id="modal-ledger-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="modal-ledger-type">Ledger Type</label>
+                    <select id="modal-ledger-type" required></select>
+                </div>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Créer le ledger</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="modal-template-journal-entry">
+        <form data-modal-form="journal-entry">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="modal-journal-name">Nom</label>
+                    <input type="text" id="modal-journal-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="modal-journal-nature">Nature</label>
+                    <select id="modal-journal-nature" required></select>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="modal-journal-start-ledger">Start Ledger</label>
+                    <select id="modal-journal-start-ledger"></select>
+                </div>
+                <div class="form-group">
+                    <label for="modal-journal-end-ledger">End Ledger</label>
+                    <select id="modal-journal-end-ledger"></select>
+                </div>
+            </div>
+
+            <div class="form-grid-4">
+                <div class="form-group">
+                    <label for="modal-journal-start-portfolio">Start Portfolio</label>
+                    <select id="modal-journal-start-portfolio">
+                        <option value="">--</option>
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="modal-journal-end-portfolio">End Portfolio</label>
+                    <select id="modal-journal-end-portfolio">
+                        <option value="">--</option>
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="modal-journal-start-asset">Start Asset</label>
+                    <select id="modal-journal-start-asset">
+                        <option value="">--</option>
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="modal-journal-end-asset">End Asset</label>
+                    <select id="modal-journal-end-asset">
+                        <option value="">--</option>
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="modal-journal-is-cash">Is Cash</label>
+                    <select id="modal-journal-is-cash">
+                        <option value="">--</option>
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="modal-journal-realized-pnl">Realized P&L</label>
+                    <select id="modal-journal-realized-pnl">
+                        <option value="">--</option>
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="modal-journal-affects-cost-basis">Affects Cost Basis</label>
+                    <select id="modal-journal-affects-cost-basis">
+                        <option value="">--</option>
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                    </select>
+                </div>
+                <div class="form-group"></div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-primary" type="submit">Créer le journal entry</button>
+            </div>
+        </form>
+    </template>
+
+    <script>
+        // =========================================================
+        // 1. Configuration Supabase
+        // =========================================================
+        const SUPABASE_URL = 'https://jyuonaxizhzzlmkwapyn.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dW9uYXhpemh6emxta3dhcHluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NjU1MjcsImV4cCI6MjA5MDU0MTUyN30.xZJWfsMz8ro6xv0uGe8OcZZUItuWyCz7uft6kZBXVJ8';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // =========================================================
+        // 2. Etat global
+        // =========================================================
+        let currentUser = null;
+        let operations = [];
+        let portfolios = [];
+        let assets = [];
+        let categories = [];
+        let countries = [];
+        let currencies = [];
+        let marketplaces = [];
+        let ledgers = [];
+        let journalEntries = [];
+        let entries = [];
+        let movements = [];
+        let selectedOperation = null;
+        let selectedOperationJournalEntries = [];
+        let currentModalType = null;
+
+        const natureOptions = [
+            { label: 'TRADE', value: 'TRADE' },
+            { label: 'CAPITALE', value: 'CAPITAL' },
+            { label: 'DEPENSE', value: 'EXPENSE' },
+            { label: 'REVENU', value: 'INCOME' },
+            { label: 'TRANSFERE', value: 'TRANSFER' }
+        ];
+
+        const ledgerTypeOptions = [
+            { label: 'CAPITAL', value: 'EQUITY' },
+            { label: 'LIQUIDITE', value: 'CASH' },
+            { label: 'DEPENSE', value: 'EXPENSE' },
+            { label: 'ACTIF', value: 'ASSET' },
+            { label: 'REVENU', value: 'INCOME' },
+            { label: 'TAXE', value: 'TAX' }
+        ];
+
+        // =========================================================
+        // 3. Références DOM
+        // =========================================================
+        const loginPage = document.getElementById('login-page');
+        const appPage = document.getElementById('app-page');
+        const loginForm = document.getElementById('login-form');
+        const btnLogin = document.getElementById('btn-login');
+        const btnLogout = document.getElementById('btn-logout');
+        const btnRefresh = document.getElementById('btn-refresh');
+        const loginError = document.getElementById('login-error');
+        const globalError = document.getElementById('global-error');
+        const globalSuccess = document.getElementById('global-success');
+        const sessionInfo = document.getElementById('session-info');
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabPanels = document.querySelectorAll('.tab-panel');
+        const modalBackdrop = document.getElementById('modal-backdrop');
+        const modalClose = document.getElementById('modal-close');
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
+        const modalError = document.getElementById('modal-error');
+        const modalSuccess = document.getElementById('modal-success');
+
+        const entryDom = {
+            error: document.getElementById('entry-error'),
+            success: document.getElementById('entry-success'),
+            operationSelect: document.getElementById('entry-operation-select'),
+            dateInput: document.getElementById('entry-date'),
+            helper: document.getElementById('entry-operation-helper'),
+            rowsContainer: document.getElementById('entry-rows-container'),
+            standardBlock: document.getElementById('entry-standard-block'),
+            transferBlock: document.getElementById('entry-transfer-block'),
+            standardPortfolioSelect: document.getElementById('entry-standard-portfolio-select'),
+            standardAssetSelect: document.getElementById('entry-standard-asset-select'),
+            standardAssetGroup: document.getElementById('entry-standard-asset-group'),
+            startPortfolioSelect: document.getElementById('entry-start-portfolio-select'),
+            endPortfolioSelect: document.getElementById('entry-end-portfolio-select'),
+            startAssetSelect: document.getElementById('entry-start-asset-select'),
+            endAssetSelect: document.getElementById('entry-end-asset-select'),
+            startAssetGroup: document.getElementById('entry-start-asset-group'),
+            endAssetGroup: document.getElementById('entry-end-asset-group'),
+            submit: document.getElementById('btn-entry-submit')
+        };
+
+        const movementDom = {
+            error: document.getElementById('movement-error'),
+            success: document.getElementById('movement-success'),
+            entrySelect: document.getElementById('movement-entry-select'),
+            ledgerSelect: document.getElementById('movement-ledger-select'),
+            portfolioSelect: document.getElementById('movement-portfolio-select'),
+            assetSelect: document.getElementById('movement-asset-select'),
+            sideSelect: document.getElementById('movement-side-select'),
+            amountInput: document.getElementById('movement-amount'),
+            quantityInput: document.getElementById('movement-quantity'),
+            amountGroup: document.getElementById('movement-amount-group'),
+            quantityGroup: document.getElementById('movement-quantity-group'),
+            helper: document.getElementById('movement-entry-helper')
+        };
+
+        const tAccountPortfolioFilter = document.getElementById('taccount-portfolio-filter');
+        const tAccountAssetFilter = document.getElementById('taccount-asset-filter');
+        const tAccountsGrid = document.getElementById('taccounts-grid');
+        const tAccountsEmpty = document.getElementById('taccounts-empty');
+
+        // =========================================================
+        // 4. Utilitaires génériques
+        // =========================================================
+        function showPage(page) {
+            loginPage.classList.toggle('active', page === 'login');
+            appPage.classList.toggle('active', page === 'app');
+        }
+
+        function showMessage(element, message) {
+            element.textContent = message;
+            element.style.display = 'block';
+        }
+
+        function hideMessage(element) {
+            element.textContent = '';
+            element.style.display = 'none';
+        }
+
+        function clearMessages(...elements) {
+            elements.forEach(hideMessage);
+        }
+
+        function showFormFeedback(scope, type, message) {
+            const map = {
+                asset: ['asset-error', 'asset-success'],
+                entry: ['entry-error', 'entry-success'],
+                operation: ['operation-error', 'operation-success'],
+                journal: ['journal-error', 'journal-success'],
+                ledger: ['ledger-error', 'ledger-success'],
+                portfolio: ['portfolio-error', 'portfolio-success'],
+                country: ['country-error', 'country-success'],
+                marketplace: ['marketplace-error', 'marketplace-success'],
+                currency: ['currency-error', 'currency-success'],
+                category: ['category-error', 'category-success'],
+                movement: ['movement-error', 'movement-success']
+            };
+
+            const ids = map[scope];
+            if (!ids) return;
+            clearMessages(document.getElementById(ids[0]), document.getElementById(ids[1]));
+            showMessage(document.getElementById(type === 'error' ? ids[0] : ids[1]), message);
+        }
+
+        function getErrorMessage(error) {
+            if (!error) return 'Erreur inconnue.';
+            const parts = [error.message, error.details, error.hint].filter(Boolean);
+            return parts.length > 0 ? parts.join(' | ') : 'Erreur inconnue.';
+        }
+
+        function setButtonState(button, disabled, label) {
+            button.disabled = disabled;
+            button.textContent = label;
+        }
+
+        function fillSelect(select, items, placeholder, allowEmpty = true) {
+            select.innerHTML = '';
+
+            if (allowEmpty) {
+                const empty = document.createElement('option');
+                empty.value = '';
+                empty.textContent = placeholder;
+                select.appendChild(empty);
+            }
+
+            items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item.label;
+                select.appendChild(option);
+            });
+        }
+
+        function fillStaticSelect(select, options, placeholder, allowEmpty = true) {
+            select.innerHTML = '';
+
+            if (allowEmpty) {
+                const empty = document.createElement('option');
+                empty.value = '';
+                empty.textContent = placeholder;
+                select.appendChild(empty);
+            }
+
+            options.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.value;
+                option.textContent = item.label;
+                select.appendChild(option);
+            });
+        }
+
+        function parseBooleanSelectValue(value) {
+            if (value === 'true') return true;
+            if (value === 'false') return false;
+            return null;
+        }
+
+        function pruneNullishFields(object) {
+            return Object.fromEntries(
+                Object.entries(object).filter(([, value]) => value !== null && value !== undefined && value !== '')
+            );
+        }
+
+        function formatAmount(value) {
+            return Number(value || 0).toLocaleString('fr-FR', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function showTab(tabName) {
+            tabButtons.forEach(button => button.classList.toggle('active', button.dataset.tab === tabName));
+            tabPanels.forEach(panel => panel.classList.toggle('active', panel.id === `tab-${tabName}`));
+        }
+
+        function renderSelectOptionLists() {
+            const categoryOptions = categories.map(item => ({ id: item.id, label: item.name }));
+            const countryOptions = countries.map(item => ({ id: item.id, label: item.name || `Country #${item.id}` }));
+            const currencyOptions = currencies.map(item => ({ id: item.id, label: item.name || `Currency #${item.id}` }));
+            const marketplaceOptions = marketplaces.map(item => {
+                const countryName = item.country_id
+                    ? (countries.find(c => c.id === item.country_id)?.country_name || `#${item.country_id}`)
+                    : '';
+                return {
+                    id: item.id,
+                    label: `${item.name || `Marketplace #${item.id}`}${countryName ? ` | ${countryName}` : ''}`
+                };
+            });
+            const portfolioOptions = portfolios.map(item => ({ id: item.id, label: item.portfolio_name }));
+            const assetOptions = assets.map(item => ({ id: item.id, label: item.name }));
+            const ledgerOptions = ledgers.map(item => ({ id: item.id, label: item.name || `Ledger #${item.id}` }));
+            const journalOptions = journalEntries.map(item => ({ id: item.id, label: item.name }));
+            const entryOptions = entries.map(item => ({
+                id: item.id,
+                label: `#${item.id} | ${item.date || 'Sans date'} | ${item.journal_entry_name || 'Sans journal'}`
+            }));
+            const operationOptions = operations.map(item => ({ id: item.id, label: item.name || `Operation #${item.id}` }));
+
+            fillSelect(document.getElementById('asset-category-select'), categoryOptions, '-- Sélectionner une catégorie --');
+            fillSelect(document.getElementById('asset-country-select'), countryOptions, '-- Sélectionner un country --');
+            fillSelect(document.getElementById('asset-currency-select'), currencyOptions, '-- Sélectionner une currency --');
+            fillSelect(document.getElementById('asset-marketplace-select'), marketplaceOptions, '-- Sélectionner un marketplace --');
+            fillSelect(document.getElementById('marketplace-country'), countryOptions, '-- Sélectionner un pays --');
+
+            fillSelect(document.getElementById('journal-start-ledger-select'), ledgerOptions, '-- Aucun ledger --');
+            fillSelect(document.getElementById('journal-end-ledger-select'), ledgerOptions, '-- Aucun ledger --');
+
+            fillStaticSelect(document.getElementById('journal-nature'), natureOptions, '-- Sélectionner une nature --');
+            fillStaticSelect(document.getElementById('ledger-type'), ledgerTypeOptions, '-- Sélectionner un type --');
+
+            fillSelect(document.getElementById('entry-operation-select'), operationOptions, '-- Sélectionner une opération --');
+            fillSelect(entryDom.standardPortfolioSelect, portfolioOptions, '-- Sélectionner un portefeuille --');
+            fillSelect(entryDom.startPortfolioSelect, portfolioOptions, '-- Sélectionner un start portfolio --');
+            fillSelect(entryDom.endPortfolioSelect, portfolioOptions, '-- Sélectionner un end portfolio --');
+            fillSelect(entryDom.standardAssetSelect, assetOptions, '-- Sélectionner un actif --');
+            fillSelect(entryDom.startAssetSelect, assetOptions, '-- Sélectionner un start asset --');
+            fillSelect(entryDom.endAssetSelect, assetOptions, '-- Sélectionner un end asset --');
+
+            ['1', '2', '3', '4', '5'].forEach(index => {
+                fillSelect(document.getElementById(`operation-journal-${index}`), journalOptions, '-- Aucun journal entry --');
+            });
+
+            fillSelect(movementDom.entrySelect, entryOptions, '-- Sélectionner une entry --');
+            fillSelect(movementDom.ledgerSelect, ledgerOptions, '-- Sélectionner un ledger --');
+            fillSelect(movementDom.portfolioSelect, portfolioOptions, '-- Sélectionner un portfolio --');
+            fillSelect(movementDom.assetSelect, assetOptions, '-- Sélectionner un asset --');
+
+            fillSelect(tAccountPortfolioFilter, portfolioOptions, '-- Tous les portfolios --');
+            fillSelect(tAccountAssetFilter, assetOptions, '-- Tous les assets --');
+        }
+
+        // =========================================================
+        // 5. Profil utilisateur
+        // =========================================================
+        async function ensureAppUserProfile() {
+            const payload = {
+                id: currentUser.id,
+                firstname: currentUser.user_metadata?.firstname || currentUser.user_metadata?.first_name || null,
+                name: currentUser.user_metadata?.name || currentUser.user_metadata?.last_name || currentUser.email || null
+            };
+
+            const { error } = await supabaseClient
+                .from('user')
+                .upsert(payload, { onConflict: 'id' });
+
+            if (error) throw error;
+        }
+
+        // =========================================================
+        // 6. Chargement des référentiels
+        // =========================================================
+        async function loadOperations() {
+            const { data, error } = await supabaseClient
+                .from('operation')
+                .select('id, name, journal_entry_id_1, journal_entry_id_2, journal_entry_id_3, journal_entry_id_4, journal_entry_id_5')
+                .order('name');
+
+            if (error) throw error;
+            operations = data || [];
+        }
+
+        async function loadPortfolios() {
+            const { data, error } = await supabaseClient
+                .from('portfolio')
+                .select('id, portfolio_name, bank_name, account_number, opening_date, tax_rate, type')
+                .order('portfolio_name');
+
+            if (error) throw error;
+            portfolios = data || [];
+        }
+
+        async function loadAssets() {
+            const { data, error } = await supabaseClient
+                .from('asset')
+                .select('id, name, isin_code, ticker_yf, category_id, marketplace_id, currency_id, country_id')
+                .order('name');
+
+            if (error) throw error;
+            assets = data || [];
+        }
+
+        async function loadCategories() {
+            const { data, error } = await supabaseClient
+                .from('category')
+                .select('id, name')
+                .order('name');
+
+            if (error) throw error;
+            categories = data || [];
+        }
+
+        async function loadCountries() {
+            const { data, error } = await supabaseClient
+                .from('country')
+                .select('id, name, symbol')
+                .order('name');
+
+            if (error) throw error;
+            countries = data || [];
+        }
+
+        async function loadCurrencies() {
+            const { data, error } = await supabaseClient
+                .from('currency')
+                .select('id, name, symbol')
+                .order('name');
+
+            if (error) throw error;
+            currencies = data || [];
+        }
+
+        async function loadMarketplaces() {
+            const { data, error } = await supabaseClient
+                .from('marketplace')
+                .select('id, name, country_id, mic_code')
+                .order('name');
+
+            if (error) throw error;
+            marketplaces = data || [];
+        }
+
+        async function loadLedgers() {
+            const { data, error } = await supabaseClient
+                .from('ledger')
+                .select('id, name, ledger_type')
+                .order('name');
+
+            if (error) throw error;
+            ledgers = data || [];
+        }
+
+        async function loadJournalEntries() {
+            const { data, error } = await supabaseClient
+                .from('journal_entry')
+                .select('*')
+                .order('name');
+
+            if (error) throw error;
+            journalEntries = data || [];
+        }
+
+        async function loadEntries() {
+            const { data, error } = await supabaseClient
+                .from('entry')
+                .select(`
+                    id,
+                    date,
+                    quantity,
+                    unit_cost,
+                    start_portfolio_id,
+                    end_portfolio_id,
+                    start_asset_id,
+                    end_asset_id,
+                    journal_entry_id,
+                    journal_entry:journal_entry!entry_journal_entry_id_fkey (name, is_cash)
+                `)
+                .order('id', { ascending: false })
+                .limit(300);
+
+            if (error) throw error;
+
+            entries = (data || []).map(item => ({
+                ...item,
+                journal_entry_name: item.journal_entry?.name || null,
+                journal_entry_is_cash: item.journal_entry?.is_cash ?? null
+            }));
+        }
+
+        async function loadMovements() {
+            const { data, error } = await supabaseClient
+                .from('movement')
+                .select('id, created_at, entry_id, ledger_id, accounting_side, amount, quantity, portfolio_id, asset_id')
+                .order('id');
+
+            if (error) throw error;
+            movements = data || [];
+        }
+
+        async function refreshReferenceData() {
+            await Promise.all([
+                loadOperations(),
+                loadPortfolios(),
+                loadAssets(),
+                loadCategories(),
+                loadCountries(),
+                loadCurrencies(),
+                loadMarketplaces(),
+                loadLedgers(),
+                loadJournalEntries(),
+                loadEntries(),
+                loadMovements()
+            ]);
+
+            renderSelectOptionLists();
+            entryDom.dateInput.valueAsDate = new Date();
+            resetEntryStructure();
+            renderTAccounts();
+            refreshMovementFormState();
+        }
+
+        // =========================================================
+        // 7. Entrées : structure dynamique
+        // =========================================================
+        function resetEntryStructure() {
+            selectedOperation = null;
+            selectedOperationJournalEntries = [];
+            entryDom.standardBlock.classList.add('hidden');
+            entryDom.transferBlock.classList.add('hidden');
+            entryDom.rowsContainer.innerHTML = '<p class="helper">Aucune ligne à saisir pour l\'instant.</p>';
+            entryDom.helper.textContent = 'Choisis une opération pour générer la structure du formulaire.';
+        }
+
+        function isTransferOperation(entriesList) {
+            return entriesList.some(item => item.nature === 'TRANSFER');
+        }
+
+        function hasCapitalJournalEntry(entriesList) {
+            return entriesList.some(item => item.nature === 'CAPITAL');
+        }
+
+        function hasFlag(journalEntry, fieldName) {
+            return Boolean(journalEntry?.[fieldName]);
+        }
+
+        function renderEntryRows() {
+            if (selectedOperationJournalEntries.length === 0) {
+                entryDom.rowsContainer.innerHTML = '<p class="helper">Aucune ligne à saisir pour l\'instant.</p>';
+                return;
+            }
+
+            entryDom.rowsContainer.innerHTML = '';
+
+            selectedOperationJournalEntries.forEach((journalEntry, index) => {
+                const showUnitCost = Boolean(journalEntry.is_cash);
+                const row = document.createElement('div');
+                row.className = 'entry-row';
+                row.innerHTML = `
+                    <h3>Journal Entry ${index + 1} - ${journalEntry.name}</h3>
+                    <div class="form-grid-3">
+                        <div class="form-group">
+                            <label>Nature</label>
+                            <input type="text" value="${journalEntry.nature || ''}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="entry-quantity-${journalEntry.id}">Quantity</label>
+                            <input type="number" step="any" id="entry-quantity-${journalEntry.id}">
+                        </div>
+                        ${showUnitCost ? `
+                        <div class="form-group">
+                            <label for="entry-unit-cost-${journalEntry.id}">Unit Cost</label>
+                            <input type="number" step="any" id="entry-unit-cost-${journalEntry.id}">
+                        </div>` : `
+                        <div class="form-group">
+                            <label>Unit Cost</label>
+                            <input type="text" value="Non applicable pour ce journal entry" readonly>
+                        </div>`}
+                    </div>
+                    <div class="form-group">
+                        <label for="entry-comment-${journalEntry.id}">Commentaire</label>
+                        <textarea id="entry-comment-${journalEntry.id}" placeholder="Commentaire optionnel"></textarea>
+                    </div>
+                `;
+
+                entryDom.rowsContainer.appendChild(row);
+            });
+        }
+
+        async function loadJournalEntriesForSelectedOperation(operation) {
+            const journalIds = [
+                operation.journal_entry_id_1,
+                operation.journal_entry_id_2,
+                operation.journal_entry_id_3,
+                operation.journal_entry_id_4,
+                operation.journal_entry_id_5
+            ].filter(Boolean);
+
+            if (journalIds.length === 0) {
+                selectedOperationJournalEntries = [];
+                renderEntryRows();
+                entryDom.helper.textContent = 'Cette opération ne contient aucun journal entry.';
+                return;
+            }
+
+            const rows = journalIds
+                .map(id => journalEntries.find(item => String(item.id) === String(id)))
+                .filter(Boolean);
+
+            selectedOperationJournalEntries = rows;
+
+            const transferMode = isTransferOperation(rows);
+            const capitalMode = hasCapitalJournalEntry(rows);
+
+            entryDom.standardBlock.classList.toggle('hidden', transferMode);
+            entryDom.transferBlock.classList.toggle('hidden', !transferMode);
+            entryDom.standardAssetGroup.classList.toggle('hidden', capitalMode);
+            entryDom.startAssetGroup.classList.toggle('hidden', capitalMode);
+            entryDom.endAssetGroup.classList.toggle('hidden', capitalMode);
+            entryDom.helper.textContent = transferMode
+                ? 'Nature TRANSFER détectée : le formulaire utilise les champs start/end.'
+                : 'Nature standard détectée : le formulaire utilise un portefeuille et un actif uniques.';
+
+            renderEntryRows();
+        }
+
+        function buildEntryPayload(journalEntry) {
+            const transferMode = isTransferOperation(selectedOperationJournalEntries);
+            const capitalMode = hasCapitalJournalEntry(selectedOperationJournalEntries);
+
+            const standardPortfolioId = entryDom.standardPortfolioSelect.value ? parseInt(entryDom.standardPortfolioSelect.value, 10) : null;
+            const standardAssetId = !capitalMode && entryDom.standardAssetSelect.value ? parseInt(entryDom.standardAssetSelect.value, 10) : null;
+            const startPortfolioId = entryDom.startPortfolioSelect.value ? parseInt(entryDom.startPortfolioSelect.value, 10) : null;
+            const endPortfolioId = entryDom.endPortfolioSelect.value ? parseInt(entryDom.endPortfolioSelect.value, 10) : null;
+            const startAssetId = !capitalMode && entryDom.startAssetSelect.value ? parseInt(entryDom.startAssetSelect.value, 10) : null;
+            const endAssetId = !capitalMode && entryDom.endAssetSelect.value ? parseInt(entryDom.endAssetSelect.value, 10) : null;
+
+            const mappedStartPortfolioId = hasFlag(journalEntry, 'start_portfolio')
+                ? (transferMode ? startPortfolioId : standardPortfolioId)
+                : null;
+            const mappedEndPortfolioId = hasFlag(journalEntry, 'end_portfolio')
+                ? (transferMode ? endPortfolioId : standardPortfolioId)
+                : null;
+            const mappedStartAssetId = hasFlag(journalEntry, 'start_asset')
+                ? (transferMode ? startAssetId : standardAssetId)
+                : null;
+            const mappedEndAssetId = hasFlag(journalEntry, 'end_asset')
+                ? (transferMode ? endAssetId : standardAssetId)
+                : null;
+
+            return pruneNullishFields({
+                date: entryDom.dateInput.value,
+                quantity: document.getElementById(`entry-quantity-${journalEntry.id}`).value
+                    ? parseFloat(document.getElementById(`entry-quantity-${journalEntry.id}`).value)
+                    : null,
+                unit_cost: journalEntry.is_cash && document.getElementById(`entry-unit-cost-${journalEntry.id}`)?.value
+                    ? parseFloat(document.getElementById(`entry-unit-cost-${journalEntry.id}`).value)
+                    : null,
+                comment: document.getElementById(`entry-comment-${journalEntry.id}`).value.trim() || null,
+                user_id: currentUser.id,
+                start_portfolio_id: mappedStartPortfolioId,
+                end_portfolio_id: mappedEndPortfolioId,
+                start_asset_id: mappedStartAssetId,
+                end_asset_id: mappedEndAssetId,
+                journal_entry_id: parseInt(journalEntry.id, 10)
+            });
+        }
+
+        function validateEntryBeforeSubmit() {
+            if (!selectedOperation || selectedOperationJournalEntries.length === 0) {
+                throw new Error('Sélectionne une opération valide.');
+            }
+
+            if (!entryDom.dateInput.value) {
+                throw new Error('La date est obligatoire.');
+            }
+
+            const transferMode = isTransferOperation(selectedOperationJournalEntries);
+            const capitalMode = hasCapitalJournalEntry(selectedOperationJournalEntries);
+
+            if (transferMode) {
+                if (!entryDom.startPortfolioSelect.value && selectedOperationJournalEntries.some(item => hasFlag(item, 'start_portfolio'))) {
+                    throw new Error('Un start portfolio est requis.');
+                }
+                if (!entryDom.endPortfolioSelect.value && selectedOperationJournalEntries.some(item => hasFlag(item, 'end_portfolio'))) {
+                    throw new Error('Un end portfolio est requis.');
+                }
+                if (!capitalMode && !entryDom.startAssetSelect.value && selectedOperationJournalEntries.some(item => hasFlag(item, 'start_asset'))) {
+                    throw new Error('Un start asset est requis.');
+                }
+                if (!capitalMode && !entryDom.endAssetSelect.value && selectedOperationJournalEntries.some(item => hasFlag(item, 'end_asset'))) {
+                    throw new Error('Un end asset est requis.');
+                }
+            } else {
+                if (!entryDom.standardPortfolioSelect.value && selectedOperationJournalEntries.some(item => hasFlag(item, 'start_portfolio') || hasFlag(item, 'end_portfolio'))) {
+                    throw new Error('Un portefeuille est requis.');
+                }
+                if (!capitalMode && !entryDom.standardAssetSelect.value && selectedOperationJournalEntries.some(item => hasFlag(item, 'start_asset') || hasFlag(item, 'end_asset'))) {
+                    throw new Error('Un actif est requis.');
+                }
+            }
+        }
+
+        // =========================================================
+        // 8. Movements auto + manuel
+        // =========================================================
+        function getMovementValues(journalEntry, entryPayload) {
+            if (journalEntry.is_cash) {
+                if (entryPayload.quantity == null || entryPayload.unit_cost == null) {
+                    throw new Error(`Le journal entry "${journalEntry.name}" a besoin de quantity et unit_cost pour calculer le cash.`);
+                }
+
+                return {
+                    amount: entryPayload.quantity * entryPayload.unit_cost,
+                    quantity: null
+                };
+            }
+
+            if (entryPayload.quantity == null) {
+                throw new Error(`Le journal entry "${journalEntry.name}" a besoin d'une quantity pour créer les movements.`);
+            }
+
+            return {
+                amount: null,
+                quantity: entryPayload.quantity
+            };
+        }
+
+        function buildMovementRows(insertedEntry, entryPayload, journalEntry) {
+            const movementValues = getMovementValues(journalEntry, entryPayload);
+            const rows = [];
+
+            if (journalEntry.start_ledger_id) {
+                rows.push(pruneNullishFields({
+                    entry_id: insertedEntry.id,
+                    ledger_id: journalEntry.start_ledger_id,
+                    portfolio_id: entryPayload.start_portfolio_id ?? null,
+                    asset_id: entryPayload.start_asset_id ?? null,
+                    accounting_side: 'credit',
+                    amount: movementValues.amount,
+                    quantity: movementValues.quantity,
+                    user_id: currentUser.id
+                }));
+            }
+
+            if (journalEntry.end_ledger_id) {
+                rows.push(pruneNullishFields({
+                    entry_id: insertedEntry.id,
+                    ledger_id: journalEntry.end_ledger_id,
+                    portfolio_id: entryPayload.end_portfolio_id ?? null,
+                    asset_id: entryPayload.end_asset_id ?? null,
+                    accounting_side: 'debit',
+                    amount: movementValues.amount,
+                    quantity: movementValues.quantity,
+                    user_id: currentUser.id
+                }));
+            }
+
+            return rows;
+        }
+
+        function refreshMovementFormState() {
+            const entryId = movementDom.entrySelect.value;
+            const selectedEntry = entries.find(item => String(item.id) === String(entryId));
+
+            movementDom.amountGroup.classList.remove('hidden');
+            movementDom.quantityGroup.classList.remove('hidden');
+            movementDom.amountInput.disabled = false;
+            movementDom.quantityInput.disabled = false;
+
+            if (!selectedEntry) {
+                movementDom.helper.textContent = 'Choisis une entry pour adapter amount/quantity selon `is_cash`.';
+                return;
+            }
+
+            movementDom.portfolioSelect.value = selectedEntry.start_portfolio_id || selectedEntry.end_portfolio_id || '';
+            movementDom.assetSelect.value = selectedEntry.start_asset_id || selectedEntry.end_asset_id || '';
+
+            if (selectedEntry.journal_entry_is_cash) {
+                movementDom.quantityInput.value = '';
+                movementDom.quantityInput.disabled = true;
+                movementDom.quantityGroup.classList.add('hidden');
+                movementDom.helper.textContent = 'Cette entry est cash : amount actif, quantity bloqué.';
+            } else {
+                movementDom.amountInput.value = '';
+                movementDom.amountInput.disabled = true;
+                movementDom.amountGroup.classList.add('hidden');
+                movementDom.helper.textContent = 'Cette entry n\'est pas cash : quantity actif, amount bloqué.';
+            }
+        }
+
+        // =========================================================
+        // 9. Comptes en T
+        // =========================================================
+        function renderMovementLines(lines) {
+            if (lines.length === 0) {
+                return '<div class="helper">Aucun mouvement</div>';
+            }
+
+            return lines.map(line => `
+                <div class="movement-line">
+                    <span>Entry #${line.entry_id ?? '-'}${line.portfolio_id ? ` | P${line.portfolio_id}` : ''}${line.asset_id ? ` | A${line.asset_id}` : ''}</span>
+                    <span>${line.amount != null ? formatAmount(line.amount) : formatAmount(line.quantity)}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderTAccounts() {
+            const selectedPortfolioId = tAccountPortfolioFilter.value ? parseInt(tAccountPortfolioFilter.value, 10) : null;
+            const selectedAssetId = tAccountAssetFilter.value ? parseInt(tAccountAssetFilter.value, 10) : null;
+
+            const filteredMovements = movements.filter(movement => {
+                const portfolioOk = selectedPortfolioId == null || movement.portfolio_id === selectedPortfolioId;
+                const assetOk = selectedAssetId == null || movement.asset_id === selectedAssetId;
+                return portfolioOk && assetOk;
+            });
+
+            const cards = ledgers
+                .map(ledger => {
+                    const ledgerMovements = filteredMovements.filter(m => m.ledger_id === ledger.id);
+                    const debits = ledgerMovements.filter(m => m.accounting_side === 'debit');
+                    const credits = ledgerMovements.filter(m => m.accounting_side === 'credit');
+                    const debitTotal = debits.reduce((sum, m) => sum + Number(m.amount ?? m.quantity ?? 0), 0);
+                    const creditTotal = credits.reduce((sum, m) => sum + Number(m.amount ?? m.quantity ?? 0), 0);
+                    return { ledger, debits, credits, debitTotal, creditTotal, count: ledgerMovements.length };
+                })
+                .filter(item => item.count > 0);
+
+            tAccountsGrid.innerHTML = '';
+            tAccountsEmpty.style.display = cards.length === 0 ? 'block' : 'none';
+
+            cards.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 't-account';
+                card.innerHTML = `
+                    <div style="margin-bottom: 14px;">
+                        <div style="font-size: 17px; font-weight: 700;">${item.ledger.name || `Ledger #${item.ledger.id}`}</div>
+                        <div class="helper">${item.ledger.ledger_type || 'Sans type'}</div>
+                    </div>
+                    <div class="t-shape">
+                        <div class="t-side">
+                            <h4>Débit</h4>
+                            ${renderMovementLines(item.debits)}
+                            <div class="movement-total"><span>Total</span><span>${formatAmount(item.debitTotal)}</span></div>
+                        </div>
+                        <div class="t-side">
+                            <h4>Crédit</h4>
+                            ${renderMovementLines(item.credits)}
+                            <div class="movement-total"><span>Total</span><span>${formatAmount(item.creditTotal)}</span></div>
+                        </div>
+                    </div>
+                `;
+                tAccountsGrid.appendChild(card);
+            });
+        }
+
+        // =========================================================
+        // 10. CRUD générique
+        // =========================================================
+        async function insertSingleRow(table, payload) {
+            const { data, error } = await supabaseClient
+                .from(table)
+                .insert([payload])
+                .select('*')
+                .single();
+
+            if (error) throw error;
+            return data;
+        }
+
+        // =========================================================
+        // 11. Modal
+        // =========================================================
+        function buildModalTitle(type) {
+            const map = {
+                category: 'Ajout rapide - Category',
+                country: 'Ajout rapide - Country',
+                marketplace: 'Ajout rapide - Marketplace',
+                currency: 'Ajout rapide - Currency',
+                ledger: 'Ajout rapide - Ledger',
+                'journal-entry': 'Ajout rapide - Journal Entry'
+            };
+
+            return map[type] || 'Ajout rapide';
+        }
+
+        function hydrateModalSelects(type) {
+            if (type === 'ledger') {
+                fillStaticSelect(document.getElementById('modal-ledger-type'), ledgerTypeOptions, '-- Sélectionner un type --');
+            }
+
+            if (type === 'marketplace') {
+                const countryOptions = countries.map(item => ({ id: item.id, label: item.country_name || item.name || `Country #${item.id}` }));
+                fillSelect(document.getElementById('modal-marketplace-country'), countryOptions, '-- Sélectionner un pays --');
+            }
+
+            if (type === 'journal-entry') {
+                fillStaticSelect(document.getElementById('modal-journal-nature'), natureOptions, '-- Sélectionner une nature --');
+                const ledgerOptions = ledgers.map(item => ({ id: item.id, label: item.name || `Ledger #${item.id}` }));
+                fillSelect(document.getElementById('modal-journal-start-ledger'), ledgerOptions, '-- Aucun ledger --');
+                fillSelect(document.getElementById('modal-journal-end-ledger'), ledgerOptions, '-- Aucun ledger --');
+            }
+        }
+
+        function openModal(type) {
+            currentModalType = type;
+            clearMessages(modalError, modalSuccess);
+            modalTitle.textContent = buildModalTitle(type);
+            const template = document.getElementById(`modal-template-${type}`);
+            if (!template) return;
+            modalBody.innerHTML = template.innerHTML;
+            hydrateModalSelects(type);
+            modalBackdrop.classList.add('active');
+        }
+
+        function closeModal() {
+            currentModalType = null;
+            modalBody.innerHTML = '';
+            clearMessages(modalError, modalSuccess);
+            modalBackdrop.classList.remove('active');
+        }
+
+        async function handleModalSubmit(event) {
+            event.preventDefault();
+            clearMessages(modalError, modalSuccess);
+
+            try {
+                let created = null;
+
+                if (currentModalType === 'category') {
+                    created = await insertSingleRow('category', {
+                        name: document.getElementById('modal-category-name').value.trim(),
+                        user_id: currentUser.id
+                    });
+                    showMessage(modalSuccess, 'Catégorie créée.');
+                }
+
+                if (currentModalType === 'country') {
+                    created = await insertSingleRow('country', {
+                        name: document.getElementById('modal-country-name').value.trim(),
+                        symbol: document.getElementById('modal-country-symbol').value.trim() || null,
+                        user_id: currentUser.id
+                    });
+                    showMessage(modalSuccess, 'Country créé.');
+                }
+
+                if (currentModalType === 'marketplace') {
+                    created = await insertSingleRow('marketplace', pruneNullishFields({
+                        name: document.getElementById('modal-marketplace-name').value.trim(),
+                        country_id: document.getElementById('modal-marketplace-country').value ? parseInt(document.getElementById('modal-marketplace-country').value, 10) : null,
+                        mic_code: document.getElementById('modal-marketplace-mic_code').value.trim() || null,
+                        user_id: currentUser.id
+                    }));
+                    showMessage(modalSuccess, 'Marketplace créé.');
+                }
+
+                if (currentModalType === 'currency') {
+                    created = await insertSingleRow('currency', {
+                        name: document.getElementById('modal-currency-name').value.trim(),
+                        symbol: document.getElementById('modal-currency-symbol').value.trim() || null,
+                        user_id: currentUser.id
+                    });
+                    showMessage(modalSuccess, 'Currency créée.');
+                }
+
+                if (currentModalType === 'ledger') {
+                    created = await insertSingleRow('ledger', {
+                        name: document.getElementById('modal-ledger-name').value.trim(),
+                        ledger_type: document.getElementById('modal-ledger-type').value,
+                        user_id: currentUser.id
+                    });
+                    showMessage(modalSuccess, 'Ledger créé.');
+                }
+
+                if (currentModalType === 'journal-entry') {
+                    created = await insertSingleRow('journal_entry', pruneNullishFields({
+                        name: document.getElementById('modal-journal-name').value.trim(),
+                        nature: document.getElementById('modal-journal-nature').value,
+                        start_ledger_id: document.getElementById('modal-journal-start-ledger').value ? parseInt(document.getElementById('modal-journal-start-ledger').value, 10) : null,
+                        end_ledger_id: document.getElementById('modal-journal-end-ledger').value ? parseInt(document.getElementById('modal-journal-end-ledger').value, 10) : null,
+                        start_portfolio: parseBooleanSelectValue(document.getElementById('modal-journal-start-portfolio').value),
+                        end_portfolio: parseBooleanSelectValue(document.getElementById('modal-journal-end-portfolio').value),
+                        start_asset: parseBooleanSelectValue(document.getElementById('modal-journal-start-asset').value),
+                        end_asset: parseBooleanSelectValue(document.getElementById('modal-journal-end-asset').value),
+                        is_cash: parseBooleanSelectValue(document.getElementById('modal-journal-is-cash').value),
+                        "realized_p&l": parseBooleanSelectValue(document.getElementById('modal-journal-realized-pnl').value),
+                        affects_cost_basis: parseBooleanSelectValue(document.getElementById('modal-journal-affects-cost-basis').value),
+                        user_id: currentUser.id
+                    }));
+                    showMessage(modalSuccess, 'Journal entry créé.');
+                }
+
+                if (created) {
+                    await refreshReferenceData();
+                }
+            } catch (error) {
+                showMessage(modalError, getErrorMessage(error));
+            }
+        }
+
+        // =========================================================
+        // 12. Session
+        // =========================================================
+        async function handleSignedInUser(user) {
+            currentUser = user;
+            sessionInfo.textContent = user.email || user.id;
+            await ensureAppUserProfile();
+            await refreshReferenceData();
+            showPage('app');
+        }
+
+        function handleSignedOutUser() {
+            currentUser = null;
+            loginForm.reset();
+            resetEntryStructure();
+            closeModal();
+            showPage('login');
+        }
+
+        // =========================================================
+        // 13. Initialisation
+        // =========================================================
+        async function init() {
+            const { data, error } = await supabaseClient.auth.getSession();
+            if (error) {
+                showMessage(loginError, `Erreur de session: ${getErrorMessage(error)}`);
+                return;
+            }
+
+            if (data.session?.user) {
+                await handleSignedInUser(data.session.user);
+            }
+
+            supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                if (event === 'SIGNED_OUT') {
+                    handleSignedOutUser();
+                    return;
+                }
+
+                if (session?.user) {
+                    await handleSignedInUser(session.user);
+                }
+            });
+        }
+
+        // =========================================================
+        // 14. Actions globales
+        // =========================================================
+        loginForm.addEventListener('submit', async event => {
+            event.preventDefault();
+            clearMessages(loginError);
+            setButtonState(btnLogin, true, 'Connexion...');
+
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: document.getElementById('login-email').value.trim(),
+                    password: document.getElementById('login-password').value
+                });
+
+                if (error) throw error;
+                if (!data.user) throw new Error('Connexion impossible.');
+
+                await handleSignedInUser(data.user);
+            } catch (error) {
+                showMessage(loginError, `Erreur de connexion: ${getErrorMessage(error)}`);
+            } finally {
+                setButtonState(btnLogin, false, 'Se connecter');
+            }
+        });
+
+        btnLogout.addEventListener('click', async () => {
+            await supabaseClient.auth.signOut();
+        });
+
+        btnRefresh.addEventListener('click', async () => {
+            clearMessages(globalError, globalSuccess);
+            try {
+                await refreshReferenceData();
+                showMessage(globalSuccess, 'Listes rafraîchies avec succès.');
+            } catch (error) {
+                showMessage(globalError, getErrorMessage(error));
+            }
+        });
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => showTab(button.dataset.tab));
+        });
+
+        document.querySelectorAll('[data-modal]').forEach(button => {
+            button.addEventListener('click', () => openModal(button.dataset.modal));
+        });
+
+        modalClose.addEventListener('click', closeModal);
+        modalBackdrop.addEventListener('click', event => {
+            if (event.target === modalBackdrop) closeModal();
+        });
+
+        modalBody.addEventListener('submit', handleModalSubmit);
+
+        // =========================================================
+        // 15. Formulaires principaux
+        // =========================================================
+        document.getElementById('asset-form').addEventListener('submit', async event => {
+            event.preventDefault();
+            try {
+                await insertSingleRow('asset', pruneNullishFields({
+                    name: document.getElementById('asset-name').value.trim(),
+                    isin_code: document.getElementById('asset-isin').value.trim(),
+                    ticker_yf: document.getElementById('asset-ticker').value.trim(),
+                    category_id: document.getElementById('asset-category-select').value ? parseInt(document.getElementById('asset-category-select').value, 10) : null,
+                    country_id: document.getElementById('asset-country-select').value ? parseInt(document.getElementById('asset-country-select').value, 10) : null,
+                    marketplace_id: document.getElementById('asset-marketplace-select').value ? parseInt(document.getElementById('asset-marketplace-select').value, 10) : null,
+                    currency_id: document.getElementById('asset-currency-select').value ? parseInt(document.getElementById('asset-currency-select').value, 10) : null,
+                    user_id: currentUser.id
+                }));
+                showFormFeedback('asset', 'success', 'Asset créé avec succès.');
+                event.target.reset();
+                await refreshReferenceData();
+            } catch (error) {
+                showFormFeedback('asset', 'error', getErrorMessage(error));
+            }
+        });
+
+        document.getElementById('portfolio-form').addEventListener('submit', async event => {
+            event.preventDefault();
+            try {
+                await insertSingleRow('portfolio', pruneNullishFields({
+                    portfolio_name: document.getElementById('portfolio-name').value.trim(),
+                    bank_name: document.getElementById('portfolio-bank').value.trim(),
+                    account_number: document.getElementById('portfolio-account-number').value.trim(),
+                    opening_date: document.getElementById('portfolio-opening-date').value || null,
+                    tax_rate: document.getElementById('portfolio-tax-rate').value ? parseFloat(document.getElementById('portfolio-tax-rate').value) : null,
+                    type: document.getElementById('portfolio-type').value.trim() || null,
+                    user_id: currentUser.id
+                }));
+                showFormFeedback('portfolio', 'success', 'Portfolio créé avec succès.');
+                event.target.reset();
+                await refreshReferenceData();
+            } catch (error) {
+                showFormFeedback('portfolio', 'error', getErrorMessage(error));
+            }
+        });
+
+        document.getElementById('ledger-form').addEventListener('submit', async event => {
+            event.preventDefault();
+            try {
+                await insertSingleRow('ledger', {
+                    name: document.getElementById('ledger-name').value.trim(),
+                    ledger_type: document.getElementById('ledger-type').value,
+                    user_id: currentUser.id
+                });
+                showFormFeedback('ledger', 'success', 'Ledger créé avec succès.');
+                event.target.reset();
+                await refreshReferenceData();
+            } catch (error) {
+                showFormFeedback('ledger', 'error', getErrorMessage(error));
+            }
+        });
+
+        document.getElementById('journal-form').addEventListener('submit', async event => {
+            event.preventDefault();
+            try {
+                await insertSingleRow('journal_entry', pruneNullishFields({
+                    name: document.getElementById('journal-name').value.trim(),
+                    nature: document.getElementById('journal-nature').value,
+                    cash_direction: document.getElementById('journal-cash-direction').value.trim() || null,
+                    position_direction: document.getElementById('journal-position-direction').value.trim() || null,
+                    start_portfolio: parseBooleanSelectValue(document.getElementById('journal-start-portfolio').value),
+                    end_portfolio: parseBooleanSelectValue(document.getElementById('journal-end-portfolio').value),
+                    start_asset: parseBooleanSelectValue(document.getElementById('journal-start-asset').value),
+                    end_asset: parseBooleanSelectValue(document.getElementById('journal-end-asset').value),
+                    is_cash: parseBooleanSelectValue(document.getElementById('journal-is-cash').value),
+                    "realized_p&l": parseBooleanSelectValue(document.getElementById('journal-realized-pnl').value),
+                    affects_cost_basis: parseBooleanSelectValue(document.getElementById('journal-affects-cost-basis').value),
+                    start_ledger_id: document.getElementById('journal-start-ledger-select').value ? parseInt(document.getElementById('journal-start-ledger-select').value, 10) : null,
+                    end_ledger_id: document.getElementById('journal-end-ledger-select').value ? parseInt(document.getElementById('journal-end-ledger-select').value, 10) : null,
+                    user_id: currentUser.id
+                }));
+                showFormFeedback('journal', 'success', 'Journal entry créé avec succès.');
+                event.target.reset();
+                await refreshReferenceData();
+            } catch (error) {
+                showFormFeedback('journal', 'error', getErrorMessage(error));
+            }
+        });
+
+        document.getElementById('operation-form').addEventListener('submit', async event => {
+            event.preventDefault();
+            try {
+                const selectedIds = ['1', '2', '3', '4', '5'].map(index => document.getElementById(`operation-journal-${index}`).value);
+                if (!selectedIds.some(Boolean)) {
+                    throw new Error('Sélectionne au moins un journal entry.');
+                }
+
+                await insertSingleRow('operation', pruneNullishFields({
+                    name: document.getElementById('operation-name').value.trim(),
+                    user_id: currentUser.id,
+                    journal_entry_id_1: selectedIds[0] ? parseInt(selectedIds[0], 10) : null,
+                    journal_entry_id_2: selectedIds[1] ? parseInt(selectedIds[1], 10) : null,
+                    journal_entry_id_3: selectedIds[2] ? parseInt(selectedIds[2], 10) : null,
+                    journal_entry_id_4: selectedIds[3] ? parseInt(selectedIds[3], 10) : null,
+                    journal_entry_id_5: selectedIds[4] ? parseInt(selectedIds[4], 10) : null
+                }));
+                showFormFeedback('operation', 'success', 'Operation créée avec succès.');
+                event.target.reset();
+                await refreshReferenceData();
+            } catch (error) {
+                showFormFeedback('operation', 'error', getErrorMessage(error));
+            }
+        });
+
+        document.getElementById('country-form').addEventListener('submit', async event => {
+            event.preventDefault();
+            try {
+                await insertSingleRow('country', pruneNullishFields({
+                    name: document.getElementById('country-name').value.trim(),
+                    symbol: document.getElementById('country-symbol').value.trim() || null,
+                    user_id: currentUser.id
+                }));
+                showFormFeedback('country', 'success', 'Country créé.');
+                event.target.reset();
+                await refreshReferenceData();
+            } catch (error) {
+                showFormFeedback('country', 'error', getErrorMessage(error));
+            }
+        });
+
+        document.getElementById('marketplace-form').addEventListener('submit', async event => {
+            event.preventDefault();
+            try {
+                await insertSingleRow('marketplace', pruneNullishFields({
+                    name: document.getElementById('marketplace-name').value.trim(),
+                    country_id: document.getElementById('marketplace-country').value ? parseInt(document.getElementById('marketplace-country').value, 10) : null,
+                    mic_code: document.getElementById('marketplace-mic_code').value.trim() || null,
+                    user_id: currentUser.id
+                }));
+                showFormFeedback('marketplace', 'success', 'Marketplace créé.');
+                event.target.reset();
+                await refreshReferenceData();
+            } catch (error) {
+                showFormFeedback('marketplace', 'error', getErrorMessage(error));
+            }
+        });
+
+        document.getElementById('currency-form').addEventListener('submit', async event => {
+            event.preventDefault();
+            try {
+                await insertSingleRow('currency', pruneNullishFields({
+                    name: document.getElementById('currency-name').value.trim(),
+                    symbol: document.getElementById('currency-symbol').value.trim() || null,
+                    user_id: currentUser.id
+                }));
+                showFormFeedback('currency', 'success', 'Currency créée.');
+                event.target.reset();
+                await refreshReferenceData();
+            } catch (error) {
+                showFormFeedback('currency', 'error', getErrorMessage(error));
+            }
+        });
+
+        document.getElementById('category-form').addEventListener('submit', async event => {
+            event.preventDefault();
+            try {
+                await insertSingleRow('category', {
+                    name: document.getElementById('category-name').value.trim(),
+                    user_id: currentUser.id
+                });
+                showFormFeedback('category', 'success', 'Catégorie créée.');
+                event.target.reset();
+                await refreshReferenceData();
+            } catch (error) {
+                showFormFeedback('category', 'error', getErrorMessage(error));
+            }
+        });
+
+        entryDom.operationSelect.addEventListener('change', async event => {
+            clearMessages(entryDom.error, entryDom.success);
+
+            const operationId = event.target.value;
+            if (!operationId) {
+                resetEntryStructure();
+                return;
+            }
+
+            try {
+                selectedOperation = operations.find(item => String(item.id) === String(operationId)) || null;
+                if (!selectedOperation) {
+                    throw new Error('Operation introuvable.');
+                }
+
+                await loadJournalEntriesForSelectedOperation(selectedOperation);
+            } catch (error) {
+                resetEntryStructure();
+                showMessage(entryDom.error, getErrorMessage(error));
+            }
+        });
+
+        document.getElementById('entry-form').addEventListener('submit', async event => {
+            event.preventDefault();
+            clearMessages(entryDom.error, entryDom.success);
+            setButtonState(entryDom.submit, true, 'Création...');
+
+            try {
+                validateEntryBeforeSubmit();
+                const payload = selectedOperationJournalEntries.map(buildEntryPayload);
+
+                const { data: insertedEntries, error } = await supabaseClient
+                    .from('entry')
+                    .insert(payload)
+                    .select('id, journal_entry_id');
+
+                if (error) throw error;
+
+                const movementRows = [];
+
+                for (const insertedEntry of insertedEntries || []) {
+                    const sourceJournal = selectedOperationJournalEntries.find(item => String(item.id) === String(insertedEntry.journal_entry_id));
+                    const sourcePayload = payload.find(item => String(item.journal_entry_id) === String(insertedEntry.journal_entry_id));
+
+                    if (!sourceJournal || !sourcePayload) {
+                        throw new Error(`Impossible de recroiser l'entry ${insertedEntry.id}.`);
+                    }
+
+                    movementRows.push(...buildMovementRows(insertedEntry, sourcePayload, sourceJournal));
+                }
+
+                if (movementRows.length > 0) {
+                    const { error: movementError } = await supabaseClient
+                        .from('movement')
+                        .insert(movementRows);
+
+                    if (movementError) throw movementError;
+                }
+
+                showMessage(entryDom.success, `${payload.length} entry(s) créée(s) avec succès.`);
+                event.target.reset();
+                entryDom.dateInput.valueAsDate = new Date();
+                await refreshReferenceData();
+            } catch (error) {
+                console.error('Erreur lors de la création des entries:', error);
+                showMessage(entryDom.error, getErrorMessage(error));
+            } finally {
+                setButtonState(entryDom.submit, false, 'Créer les entries');
+            }
+        });
+
+        movementDom.entrySelect.addEventListener('change', refreshMovementFormState);
+
+        document.getElementById('movement-form').addEventListener('submit', async event => {
+            event.preventDefault();
+
+            try {
+                const selectedEntry = entries.find(item => String(item.id) === String(movementDom.entrySelect.value));
+                if (!selectedEntry) {
+                    throw new Error('Sélectionne une entry.');
+                }
+
+                const payload = pruneNullishFields({
+                    entry_id: parseInt(movementDom.entrySelect.value, 10),
+                    ledger_id: parseInt(movementDom.ledgerSelect.value, 10),
+                    portfolio_id: movementDom.portfolioSelect.value ? parseInt(movementDom.portfolioSelect.value, 10) : null,
+                    asset_id: movementDom.assetSelect.value ? parseInt(movementDom.assetSelect.value, 10) : null,
+                    accounting_side: movementDom.sideSelect.value,
+                    amount: selectedEntry.journal_entry_is_cash && movementDom.amountInput.value ? parseFloat(movementDom.amountInput.value) : null,
+                    quantity: !selectedEntry.journal_entry_is_cash && movementDom.quantityInput.value ? parseFloat(movementDom.quantityInput.value) : null,
+                    user_id: currentUser.id
+                });
+
+                await insertSingleRow('movement', payload);
+                showFormFeedback('movement', 'success', 'Movement créé avec succès.');
+                event.target.reset();
+                await refreshReferenceData();
+            } catch (error) {
+                showFormFeedback('movement', 'error', getErrorMessage(error));
+            }
+        });
+
+        tAccountPortfolioFilter.addEventListener('change', renderTAccounts);
+        tAccountAssetFilter.addEventListener('change', renderTAccounts);
+
+        // =========================================================
+        // 16. Démarrage
+        // =========================================================
+        init();
+    </script>
+</body>
+</html>
