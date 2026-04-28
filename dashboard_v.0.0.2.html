@@ -456,27 +456,16 @@
             position: fixed;
             bottom: 20px;
             right: 20px;
-            width: 40px;
-            height: 40px;
-            background: var(--primary);
-            border-radius: 50%;
-            box-shadow: var(--shadow);
+            font-size: 32px;
             cursor: pointer;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
             z-index: 100;
             transition: all 0.2s;
+            opacity: 0.5;
         }
 
         .balance-open-icon:hover {
-            background: var(--primary-dark);
-            transform: scale(1.05);
-        }
-
-        .balance-open-icon svg {
-            width: 20px;
-            height: 20px;
+            opacity: 1;
+            transform: scale(1.1);
         }
 
         .balance-toggle-btn {
@@ -488,14 +477,13 @@
             cursor: pointer;
             margin-left: 6px;
             padding: 0;
-            color: var(--muted);
+            color: #000;
             transition: all 0.2s;
             opacity: 0.5;
             font-size: 16px;
         }
 
         .balance-toggle-btn:hover {
-            color: var(--primary);
             opacity: 1;
         }
 
@@ -1091,7 +1079,7 @@
                     <div class="balance-header-row">
                         <div class="balance-title-wrapper">
                             <span class="balance-title">Balance Générale</span>
-                            <button class="balance-toggle-btn" id="balance-toggle-btn" title="Fermer">🧮</button>
+                            <button class="balance-toggle-btn" id="balance-toggle-btn" title="Fermer">▼</button>
                         </div>
                     </div>
                     <div class="balance-content" id="balance-content">
@@ -1121,14 +1109,7 @@
                 </div>
 
                 <!-- Balance Open Icon -->
-                <div class="balance-open-icon" id="balance-open-icon" title="Ouvrir la Balance Générale">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="12" y1="18" x2="12" y2="12"></line>
-                        <line x1="9" y1="15" x2="15" y2="15"></line>
-                    </svg>
-                </div>
+                <div class="balance-open-icon" id="balance-open-icon" title="Ouvrir la Balance Générale">🧮</div>
             </div>
 
             <!-- Page: Other Forms -->
