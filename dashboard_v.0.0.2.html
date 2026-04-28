@@ -1501,6 +1501,10 @@
         }
 
         function fillSelect(select, items, placeholder, allowEmpty = true) {
+            if (!select) {
+                console.warn('Element select introuvable, remplissage ignoré');
+                return;
+            }
             select.innerHTML = '';
 
             if (allowEmpty) {
@@ -1508,6 +1512,11 @@
                 empty.value = '';
                 empty.textContent = placeholder;
                 select.appendChild(empty);
+            }
+
+            if (!items || !Array.isArray(items)) {
+                console.warn('Items invalides pour fillSelect');
+                return;
             }
 
             items.forEach(item => {
@@ -1575,7 +1584,7 @@
             }));
             const operationOptions = operations.map(item => ({ id: item.id, label: item.name || `Opération #${item.id}` }));
 
-            // Asset form
+            // Asset form - vérification des éléments avant remplissage
             fillSelect(document.getElementById('asset-category-select'), categoryOptions, '-- Catégorie --');
             fillSelect(document.getElementById('asset-country-select'), countryOptions, '-- Pays --');
             fillSelect(document.getElementById('asset-currency-select'), currencyOptions, '-- Devise --');
@@ -1586,20 +1595,24 @@
             fillStaticSelect(document.getElementById('journal-nature'), natureOptions, '-- Nature --');
             fillStaticSelect(document.getElementById('ledger-type'), ledgerTypeOptions, '-- Type --');
 
-            // Trade form
-            fillSelect(tradeDom.operationSelect, operationOptions, '-- Opération --');
-            fillSelect(tradeDom.standardPortfolioSelect, portfolioOptions, '-- Portefeuille --');
-            fillSelect(tradeDom.startPortfolioSelect, portfolioOptions, '-- Source --');
-            fillSelect(tradeDom.endPortfolioSelect, portfolioOptions, '-- Destination --');
-            fillSelect(tradeDom.standardAssetSelect, assetOptions, '-- Actif --');
-            fillSelect(tradeDom.startAssetSelect, assetOptions, '-- Actif source --');
-            fillSelect(tradeDom.endAssetSelect, assetOptions, '-- Actif dest. --');
+            // Trade form - vérification que tradeDom est initialisé
+            if (tradeDom) {
+                fillSelect(tradeDom.operationSelect, operationOptions, '-- Opération --');
+                fillSelect(tradeDom.standardPortfolioSelect, portfolioOptions, '-- Portefeuille --');
+                fillSelect(tradeDom.startPortfolioSelect, portfolioOptions, '-- Source --');
+                fillSelect(tradeDom.endPortfolioSelect, portfolioOptions, '-- Destination --');
+                fillSelect(tradeDom.standardAssetSelect, assetOptions, '-- Actif --');
+                fillSelect(tradeDom.startAssetSelect, assetOptions, '-- Actif source --');
+                fillSelect(tradeDom.endAssetSelect, assetOptions, '-- Actif dest. --');
+            }
 
-            // Movement form
-            fillSelect(movementDom.entrySelect, entryOptions, '-- Écriture --');
-            fillSelect(movementDom.ledgerSelect, ledgerOptions, '-- Compte --');
-            fillSelect(movementDom.portfolioSelect, portfolioOptions, '-- Portefeuille --');
-            fillSelect(movementDom.assetSelect, assetOptions, '-- Actif --');
+            // Movement form - vérification que movementDom est initialisé
+            if (movementDom) {
+                fillSelect(movementDom.entrySelect, entryOptions, '-- Écriture --');
+                fillSelect(movementDom.ledgerSelect, ledgerOptions, '-- Compte --');
+                fillSelect(movementDom.portfolioSelect, portfolioOptions, '-- Portefeuille --');
+                fillSelect(movementDom.assetSelect, assetOptions, '-- Actif --');
+            }
 
             // Ledger filters
             fillSelect(document.getElementById('ledger-portfolio-filter'), portfolioOptions, '-- Tous --');
@@ -1768,12 +1781,14 @@
                 ledgers = [];
                 return;
             }
+            // Charger ledger_type
             const { data, error } = await supabaseClient
                 .from('ledger')
-                .select('id, name, type')
+                .select('id, name, ledger_type')
                 .order('name');
             if (error) {
                 console.warn('Erreur lors du chargement des ledgers:', error.message);
+                showNotification(`Ledger: ${error.message}`, 'warning');
                 ledgers = [];
                 return;
             }
@@ -1822,11 +1837,13 @@
                 movements = [];
                 return;
             }
+            // Charger accounting_side
             const { data, error } = await supabaseClient
                 .from('movement')
-                .select('id, entry_id, ledger_id, portfolio_id, asset_id, side, amount, quantity');
+                .select('id, entry_id, ledger_id, portfolio_id, asset_id, accounting_side, amount, quantity');
             if (error) {
                 console.warn('Erreur lors du chargement des movements:', error.message);
+                showNotification(`Movement: ${error.message}`, 'warning');
                 movements = [];
                 return;
             }
@@ -1949,7 +1966,7 @@
                     asset: assets.find(a => a.id === movement.asset_id)?.name || ''
                 };
 
-                if (movement.side === 'debit') {
+                if (movement.accounting_side === 'debit' || movement.accounting_side === 'DEBIT') {
                     ledgerMap.get(movement.ledger_id).debits.push(lineData);
                 } else {
                     ledgerMap.get(movement.ledger_id).credits.push(lineData);
@@ -2089,7 +2106,7 @@
             let totalCredit = 0;
 
             movements.forEach(m => {
-                if (m.side === 'debit') {
+                if (m.accounting_side === 'debit' || m.accounting_side === 'DEBIT') {
                     totalDebit += parseFloat(m.amount || 0);
                 } else {
                     totalCredit += parseFloat(m.amount || 0);
@@ -2286,7 +2303,7 @@
                 case 'ledger':
                     payload = {
                         name: document.getElementById('modal-ledger-name').value,
-                        type: document.getElementById('modal-ledger-type').value
+                        ledger_type: document.getElementById('modal-ledger-type').value
                     };
                     table = 'ledger';
                     break;
@@ -2448,7 +2465,7 @@
                 ledger_id: movementDom.ledgerSelect.value,
                 portfolio_id: movementDom.portfolioSelect.value || null,
                 asset_id: movementDom.assetSelect.value || null,
-                side: movementDom.sideSelect.value,
+                accounting_side: movementDom.sideSelect.value,
                 amount: movementDom.amountInput.value || null,
                 quantity: movementDom.quantityInput.value || null
             };
