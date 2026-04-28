@@ -1304,11 +1304,50 @@
 
     <script>
         // =========================================================
+        // 0. Vérification de l'environnement
+        // =========================================================
+        if (window.location.protocol === 'file:') {
+            console.warn('⚠️ ATTENTION: Vous ouvrez ce fichier en local (file://).');
+            console.warn('Cela peut causer des problèmes CORS avec Supabase.');
+            console.warn('Pour un fonctionnement optimal, utilisez un serveur local (ex: Live Server dans VSCode) ou hébergez ce fichier.');
+            
+            // Afficher un message à l'utilisateur
+            const corsWarning = document.createElement('div');
+            corsWarning.style.cssText = `
+                position: fixed;
+                top: 70px;
+                left: 0;
+                right: 0;
+                background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                color: white;
+                padding: 12px 24px;
+                text-align: center;
+                font-size: 14px;
+                z-index: 1000;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            `;
+            corsWarning.innerHTML = `
+                ⚠️ <strong>Mode Local Détecté:</strong> Certaines fonctionnalités peuvent être limitées. 
+                Pour une expérience complète, utilisez un serveur HTTP local.
+                <button onclick="this.parentElement.remove()" style="margin-left:15px;background:rgba(255,255,255,0.3);border:none;color:white;padding:4px 12px;border-radius:4px;cursor:pointer;">✕</button>
+            `;
+            document.body.insertBefore(corsWarning, document.body.firstChild);
+        }
+
+        // =========================================================
         // 1. Configuration Supabase
         // =========================================================
         const SUPABASE_URL = 'https://jyuonaxizhzzlmkwapyn.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dW9uYXhpemh6emxta3dhcHluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NjU1MjcsImV4cCI6MjA5MDU0MTUyN30.xZJWfsMz8ro6xv0uGe8OcZZUItuWyCz7uft6kZBXVJ8';
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        let supabaseClient;
+        try {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            console.log('✅ Client Supabase initialisé avec succès');
+        } catch (error) {
+            console.error('❌ Échec de l\'initialisation de Supabase:', error);
+            alert('Erreur: Impossible de se connecter à Supabase. Vérifiez votre connexion internet.');
+        }
 
         // =========================================================
         // 2. Etat global
@@ -1598,105 +1637,212 @@
         // 6. Chargement des référentiels
         // =========================================================
         async function loadOperations() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des operations ignoré');
+                operations = [];
+                return;
+            }
             const { data, error } = await supabaseClient
                 .from('operation')
                 .select('id, name')
                 .order('name');
-            if (error) throw error;
+            if (error) {
+                console.warn('Erreur lors du chargement des operations:', error.message);
+                operations = [];
+                return;
+            }
             operations = data || [];
         }
 
         async function loadPortfolios() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des portfolios ignoré');
+                portfolios = [];
+                return;
+            }
             const { data, error } = await supabaseClient
                 .from('portfolio')
                 .select('id, portfolio_name')
                 .order('portfolio_name');
-            if (error) throw error;
+            if (error) {
+                console.warn('Erreur lors du chargement des portfolios:', error.message);
+                portfolios = [];
+                return;
+            }
             portfolios = data || [];
         }
 
         async function loadAssets() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des assets ignoré');
+                assets = [];
+                return;
+            }
             const { data, error } = await supabaseClient
                 .from('asset')
                 .select('id, name')
                 .order('name');
-            if (error) throw error;
+            if (error) {
+                console.warn('Erreur lors du chargement des assets:', error.message);
+                assets = [];
+                return;
+            }
             assets = data || [];
         }
 
         async function loadCategories() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des categories ignoré');
+                categories = [];
+                return;
+            }
             const { data, error } = await supabaseClient
                 .from('category')
                 .select('id, name')
                 .order('name');
-            if (error) throw error;
+            if (error) {
+                console.warn('Erreur lors du chargement des categories:', error.message);
+                categories = [];
+                return;
+            }
             categories = data || [];
         }
 
         async function loadCountries() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des countries ignoré');
+                countries = [];
+                return;
+            }
             const { data, error } = await supabaseClient
                 .from('country')
                 .select('id, name, symbol')
                 .order('name');
-            if (error) throw error;
+            if (error) {
+                console.warn('Erreur lors du chargement des countries:', error.message);
+                countries = [];
+                return;
+            }
             countries = data || [];
         }
 
         async function loadCurrencies() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des currencies ignoré');
+                currencies = [];
+                return;
+            }
             const { data, error } = await supabaseClient
                 .from('currency')
                 .select('id, name, symbol')
                 .order('name');
-            if (error) throw error;
+            if (error) {
+                console.warn('Erreur lors du chargement des currencies:', error.message);
+                currencies = [];
+                return;
+            }
             currencies = data || [];
         }
 
         async function loadMarketplaces() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des marketplaces ignoré');
+                marketplaces = [];
+                return;
+            }
             const { data, error } = await supabaseClient
                 .from('marketplace')
                 .select('id, name, country_id')
                 .order('name');
-            if (error) throw error;
+            if (error) {
+                console.warn('Erreur lors du chargement des marketplaces:', error.message);
+                marketplaces = [];
+                return;
+            }
             marketplaces = data || [];
         }
 
         async function loadLedgers() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des ledgers ignoré');
+                ledgers = [];
+                return;
+            }
             const { data, error } = await supabaseClient
                 .from('ledger')
                 .select('id, name, type')
                 .order('name');
-            if (error) throw error;
+            if (error) {
+                console.warn('Erreur lors du chargement des ledgers:', error.message);
+                ledgers = [];
+                return;
+            }
             ledgers = data || [];
         }
 
         async function loadJournalEntries() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des journal entries ignoré');
+                journalEntries = [];
+                return;
+            }
             const { data, error } = await supabaseClient
                 .from('journal_entry')
                 .select('id, name')
                 .order('name');
-            if (error) throw error;
+            if (error) {
+                console.warn('Erreur lors du chargement des journal entries:', error.message);
+                journalEntries = [];
+                return;
+            }
             journalEntries = data || [];
         }
 
         async function loadEntries() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des entries ignoré');
+                entries = [];
+                return;
+            }
             const { data, error } = await supabaseClient
                 .from('entry')
                 .select('id, date, journal_entry_id')
                 .order('date');
-            if (error) throw error;
+            if (error) {
+                console.warn('Erreur lors du chargement des entries:', error.message);
+                entries = [];
+                return;
+            }
             entries = data || [];
         }
 
         async function loadMovements() {
+            if (!supabaseClient) {
+                console.warn('Supabase client non initialisé, chargement des movements ignoré');
+                movements = [];
+                return;
+            }
             const { data, error } = await supabaseClient
                 .from('movement')
                 .select('id, entry_id, ledger_id, portfolio_id, asset_id, side, amount, quantity');
-            if (error) throw error;
+            if (error) {
+                console.warn('Erreur lors du chargement des movements:', error.message);
+                movements = [];
+                return;
+            }
             movements = data || [];
         }
 
         async function refreshAllData() {
             try {
+                if (!supabaseClient) {
+                    console.warn('Supabase client non disponible, affichage en mode dégradé');
+                    renderSelectOptionLists();
+                    renderTAccounts();
+                    updateGrandJournal();
+                    return;
+                }
+                
                 await Promise.all([
                     loadOperations(),
                     loadPortfolios(),
@@ -1715,6 +1861,10 @@
                 updateGrandJournal();
             } catch (error) {
                 console.error('Erreur lors du chargement:', error);
+                // Mode dégradé: continuer avec les données partielles
+                renderSelectOptionLists();
+                renderTAccounts();
+                updateGrandJournal();
             }
         }
 
