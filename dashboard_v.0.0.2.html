@@ -439,17 +439,45 @@
             position: fixed;
             bottom: 24px;
             right: 24px;
-            width: 380px;
+            width: 450px;
             background: var(--panel);
             border: 1px solid var(--border);
             border-radius: 16px;
             box-shadow: var(--shadow);
             z-index: 100;
-            transition: transform 0.3s ease;
+            transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
         .grand-journal-panel.collapsed {
-            transform: translateX(calc(380px - 48px));
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(480px);
+        }
+
+        /* Bouton flottant pour réafficher la balance */
+        .balance-show-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: #fff;
+            border: none;
+            box-shadow: 0 4px 12px rgba(20, 89, 199, 0.4);
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            z-index: 99;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .balance-show-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(20, 89, 199, 0.5);
         }
 
         .grand-journal-header {
@@ -484,28 +512,103 @@
 
         .grand-journal-content {
             padding: 16px;
-            max-height: 400px;
+            max-height: 500px;
             overflow-y: auto;
         }
 
-        .grand-journal-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #f0f0f0;
-            font-size: 13px;
+        /* Style pour le compte en T de la balance générale */
+        .balance-t-container {
+            margin-top: 12px;
         }
 
-        .grand-journal-row:last-child {
+        .balance-t-shape {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border-top: 3px solid var(--text);
+            position: relative;
+            min-height: 200px;
+            margin-top: 8px;
+            background: #fafbfc;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .balance-t-shape::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 100%;
+            width: 2px;
+            background: var(--text);
+        }
+
+        .balance-t-side {
+            padding: 12px;
+            overflow-y: auto;
+            max-height: 300px;
+        }
+
+        .balance-t-side-title {
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--text);
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .balance-ledger-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 8px;
+            font-size: 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .balance-ledger-row:last-child {
             border-bottom: none;
         }
 
-        .grand-journal-total {
+        .balance-ledger-name {
+            color: var(--muted);
+            flex: 1;
+        }
+
+        .balance-ledger-amount {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .balance-total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 16px;
             margin-top: 12px;
-            padding-top: 12px;
-            border-top: 2px solid var(--border);
+            background: linear-gradient(135deg, rgba(20, 89, 199, 0.08) 0%, rgba(20, 89, 199, 0.02) 100%);
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 15px;
+            border-top: 2px solid var(--primary);
+        }
+
+        .balance-balance-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 16px;
+            margin-top: 8px;
+            background: linear-gradient(135deg, rgba(22, 101, 52, 0.08) 0%, rgba(22, 101, 52, 0.02) 100%);
+            border-radius: 8px;
             font-weight: 700;
             font-size: 14px;
+            border-top: 2px solid var(--success-text);
+        }
+
+        .balance-balance-row.unbalanced {
+            background: linear-gradient(135deg, rgba(180, 35, 24, 0.08) 0%, rgba(180, 35, 24, 0.02) 100%);
+            border-top-color: var(--error-text);
         }
 
         /* Cards and Forms */
@@ -757,6 +860,11 @@
             .grand-journal-panel.collapsed {
                 transform: translateX(calc(100% - 72px));
             }
+            .balance-show-btn {
+                width: 48px;
+                height: 48px;
+                font-size: 20px;
+            }
         }
     </style>
 </head>
@@ -938,20 +1046,35 @@
                         <button class="grand-journal-toggle" id="grand-journal-toggle">▼</button>
                     </div>
                     <div class="grand-journal-content" id="grand-journal-content">
-                        <div class="grand-journal-row">
+                        <div class="balance-t-container">
+                            <div class="balance-t-shape">
+                                <div class="balance-t-side">
+                                    <div class="balance-t-side-title">Débit</div>
+                                    <div id="balance-debit-ledgers"></div>
+                                </div>
+                                <div class="balance-t-side">
+                                    <div class="balance-t-side-title">Crédit</div>
+                                    <div id="balance-credit-ledgers"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="balance-total-row">
                             <span>Total Débit</span>
                             <span id="gj-total-debit">0,00</span>
                         </div>
-                        <div class="grand-journal-row">
+                        <div class="balance-total-row">
                             <span>Total Crédit</span>
                             <span id="gj-total-credit">0,00</span>
                         </div>
-                        <div class="grand-journal-total">
+                        <div class="balance-balance-row" id="balance-balance-row">
                             <span>Écart</span>
                             <span id="gj-balance">0,00</span>
                         </div>
                     </div>
                 </div>
+                
+                <!-- Bouton pour réafficher la balance -->
+                <button class="balance-show-btn" id="balance-show-btn" title="Afficher la balance">📊</button>
             </div>
 
             <!-- Page: Other Forms -->
@@ -1414,6 +1537,7 @@
         const grandJournalPanel = document.getElementById('grand-journal-panel');
         const grandJournalToggle = document.getElementById('grand-journal-toggle');
         const grandJournalHeader = document.getElementById('grand-journal-header');
+        const balanceShowBtn = document.getElementById('balance-show-btn');
 
         // Trade form
         const tradeDom = {
@@ -2109,12 +2233,63 @@
         function updateGrandJournal() {
             let totalDebit = 0;
             let totalCredit = 0;
+            
+            // Group by ledger
+            const ledgerBalances = new Map();
 
             movements.forEach(m => {
-                if (m.accounting_side === 'debit' || m.accounting_side === 'DEBIT') {
-                    totalDebit += parseFloat(m.amount || 0);
+                const amount = parseFloat(m.amount || 0);
+                const isDebit = m.accounting_side === 'debit' || m.accounting_side === 'DEBIT';
+                
+                if (isDebit) {
+                    totalDebit += amount;
                 } else {
-                    totalCredit += parseFloat(m.amount || 0);
+                    totalCredit += amount;
+                }
+                
+                // Group by ledger
+                if (!ledgerBalances.has(m.ledger_id)) {
+                    const ledger = ledgers.find(l => l.id === m.ledger_id);
+                    ledgerBalances.set(m.ledger_id, {
+                        name: ledger?.name || `Compte #${m.ledger_id}`,
+                        debit: 0,
+                        credit: 0
+                    });
+                }
+                
+                if (isDebit) {
+                    ledgerBalances.get(m.ledger_id).debit += amount;
+                } else {
+                    ledgerBalances.get(m.ledger_id).credit += amount;
+                }
+            });
+
+            // Render T-account with all ledgers
+            const debitContainer = document.getElementById('balance-debit-ledgers');
+            const creditContainer = document.getElementById('balance-credit-ledgers');
+            
+            debitContainer.innerHTML = '';
+            creditContainer.innerHTML = '';
+            
+            ledgerBalances.forEach((data, ledgerId) => {
+                if (data.debit > 0) {
+                    const row = document.createElement('div');
+                    row.className = 'balance-ledger-row';
+                    row.innerHTML = `
+                        <span class="balance-ledger-name">${data.name}</span>
+                        <span class="balance-ledger-amount">${formatAmount(data.debit)}</span>
+                    `;
+                    debitContainer.appendChild(row);
+                }
+                
+                if (data.credit > 0) {
+                    const row = document.createElement('div');
+                    row.className = 'balance-ledger-row';
+                    row.innerHTML = `
+                        <span class="balance-ledger-name">${data.name}</span>
+                        <span class="balance-ledger-amount">${formatAmount(data.credit)}</span>
+                    `;
+                    creditContainer.appendChild(row);
                 }
             });
 
@@ -2122,8 +2297,17 @@
             document.getElementById('gj-total-credit').textContent = formatAmount(totalCredit);
             const balance = totalDebit - totalCredit;
             const balanceEl = document.getElementById('gj-balance');
+            const balanceRow = document.getElementById('balance-balance-row');
+            
             balanceEl.textContent = formatAmount(Math.abs(balance));
-            balanceEl.style.color = balance === 0 ? 'var(--success-text)' : 'var(--error-text)';
+            
+            if (balance === 0) {
+                balanceEl.style.color = 'var(--success-text)';
+                balanceRow.classList.remove('unbalanced');
+            } else {
+                balanceEl.style.color = 'var(--error-text)';
+                balanceRow.classList.add('unbalanced');
+            }
         }
 
         // =========================================================
@@ -2199,11 +2383,32 @@
             e.stopPropagation();
             grandJournalPanel.classList.toggle('collapsed');
             grandJournalToggle.textContent = grandJournalPanel.classList.contains('collapsed') ? '▲' : '▼';
+            
+            // Show/hide the show button
+            if (grandJournalPanel.classList.contains('collapsed')) {
+                balanceShowBtn.style.display = 'flex';
+            } else {
+                balanceShowBtn.style.display = 'none';
+            }
         });
 
         grandJournalHeader.addEventListener('click', () => {
             grandJournalPanel.classList.toggle('collapsed');
             grandJournalToggle.textContent = grandJournalPanel.classList.contains('collapsed') ? '▲' : '▼';
+            
+            // Show/hide the show button
+            if (grandJournalPanel.classList.contains('collapsed')) {
+                balanceShowBtn.style.display = 'flex';
+            } else {
+                balanceShowBtn.style.display = 'none';
+            }
+        });
+        
+        // Bouton pour réafficher la balance
+        balanceShowBtn.addEventListener('click', () => {
+            grandJournalPanel.classList.remove('collapsed');
+            grandJournalToggle.textContent = '▼';
+            balanceShowBtn.style.display = 'none';
         });
 
         // Modal handling
